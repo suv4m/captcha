@@ -1,0 +1,181 @@
+{
+  "description": "Single source of truth: 25 features, fixed order, definitions for Adaptive CAPTCHA",
+  "version": "1.0.0",
+  "features": [
+    {
+      "index": 0,
+      "id": 1,
+      "name": "p_n_moves",
+      "group": "pointer",
+      "description": "Count of pointermoves"
+    },
+    {
+      "index": 1,
+      "id": 2,
+      "name": "p_path_len",
+      "group": "pointer",
+      "description": "Sum of segment lengths (px)"
+    },
+    {
+      "index": 2,
+      "id": 3,
+      "name": "p_straightness",
+      "group": "pointer",
+      "description": "Net displacement / path length, 0 if path is 0"
+    },
+    {
+      "index": 3,
+      "id": 4,
+      "name": "p_speed_mean",
+      "group": "pointer",
+      "description": "Mean segment speed (px/s), speed = dist/max(dt,1ms)*1000"
+    },
+    {
+      "index": 4,
+      "id": 5,
+      "name": "p_speed_std",
+      "group": "pointer",
+      "description": "Population std (ddof=0) of speeds"
+    },
+    {
+      "index": 5,
+      "id": 6,
+      "name": "p_speed_max",
+      "group": "pointer",
+      "description": "Max speed"
+    },
+    {
+      "index": 6,
+      "id": 7,
+      "name": "p_acc_std",
+      "group": "pointer",
+      "description": "Std of (speed_i - speed_{i-1}) / dt_i(s)"
+    },
+    {
+      "index": 7,
+      "id": 8,
+      "name": "p_dir_changes_per_100px",
+      "group": "pointer",
+      "description": "Count of heading changes over 30 deg between segments of length >= 4 px, per 100 px of path"
+    },
+    {
+      "index": 8,
+      "id": 9,
+      "name": "p_pauses",
+      "group": "pointer",
+      "description": "Count of inter-move gaps over 150 ms"
+    },
+    {
+      "index": 9,
+      "id": 10,
+      "name": "p_dt_std",
+      "group": "pointer",
+      "description": "Std of inter-move intervals (ms)"
+    },
+    {
+      "index": 10,
+      "id": 11,
+      "name": "p_clicks",
+      "group": "pointer",
+      "description": "Count of pointerdown"
+    },
+    {
+      "index": 11,
+      "id": 12,
+      "name": "p_click_gap_std",
+      "group": "pointer",
+      "description": "Std of gaps between clicks (ms), 0 if under 3 clicks"
+    },
+    {
+      "index": 12,
+      "id": 13,
+      "name": "k_n",
+      "group": "keyboard",
+      "description": "Count of codes 2 (keydown) and 3 (Backspace)"
+    },
+    {
+      "index": 13,
+      "id": 14,
+      "name": "k_gap_mean",
+      "group": "keyboard",
+      "description": "Mean gap between key events (ms), 0 if under 2 keys"
+    },
+    {
+      "index": 14,
+      "id": 15,
+      "name": "k_gap_std",
+      "group": "keyboard",
+      "description": "Std of gaps between key events, 0 if under 3 keys"
+    },
+    {
+      "index": 15,
+      "id": 16,
+      "name": "k_backspaces",
+      "group": "keyboard",
+      "description": "Count of code 3 (Backspace keydown)"
+    },
+    {
+      "index": 16,
+      "id": 17,
+      "name": "t_since_mount",
+      "group": "timing",
+      "description": "meta.verify_t (ms)"
+    },
+    {
+      "index": 17,
+      "id": 18,
+      "name": "t_first_interaction",
+      "group": "timing",
+      "description": "Time of first event, or verify_t if none"
+    },
+    {
+      "index": 18,
+      "id": 19,
+      "name": "t_idle_ratio",
+      "group": "timing",
+      "description": "Fraction of 100 ms bins with no event between first and last event, 0 if under 2 events"
+    },
+    {
+      "index": 19,
+      "id": 20,
+      "name": "t_scrolls",
+      "group": "timing",
+      "description": "Count of code 4 (scroll)"
+    },
+    {
+      "index": 20,
+      "id": 21,
+      "name": "t_focus_changes",
+      "group": "timing",
+      "description": "Count of code 5 (focusin)"
+    },
+    {
+      "index": 21,
+      "id": 22,
+      "name": "t_events_total",
+      "group": "timing",
+      "description": "Total number of events"
+    },
+    {
+      "index": 22,
+      "id": 23,
+      "name": "d_pointer_mouse",
+      "group": "device",
+      "description": "1 if pointer_type is mouse, 0 otherwise"
+    },
+    {
+      "index": 23,
+      "id": 24,
+      "name": "d_pointer_touch",
+      "group": "device",
+      "description": "1 if pointer_type is touch, 0 otherwise"
+    },
+    {
+      "index": 24,
+      "id": 25,
+      "name": "d_pointer_none",
+      "group": "device",
+      "description": "1 if pointer_type is none, 0 otherwise"
+    }
+  ]
+}

@@ -1,0 +1,186 @@
+{
+  "P0": {
+    "name": "P0: Fixed (vis2)",
+    "bytes_collected": 0,
+    "human_pass_rate": {
+      "mean": 0.8797,
+      "std": 0.0041
+    },
+    "mean_human_time_s": {
+      "mean": 10.24,
+      "std": 0.0
+    },
+    "bot_pass_rate": {
+      "mean": 0.3505,
+      "std": 0.0086
+    },
+    "security_rate": {
+      "mean": 0.6495,
+      "std": 0.0086
+    },
+    "challenge_free_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "a11y_violation_rate": {
+      "mean": 0.0607,
+      "std": 0.0
+    },
+    "human_block_rate_by_subgroup": {
+      "desktop_mouse": {
+        "mean": 0.1264,
+        "std": 0.0076
+      },
+      "touch_mobile": {
+        "mean": 0.1119,
+        "std": 0.0077
+      },
+      "keyboard_assistive": {
+        "mean": 0.1114,
+        "std": 0.0093
+      },
+      "motor_tremor": {
+        "mean": 0.1324,
+        "std": 0.0095
+      }
+    }
+  },
+  "P1": {
+    "name": "P1: Adaptive (Full, unconstrained)",
+    "bytes_collected": 216,
+    "human_pass_rate": {
+      "mean": 0.8331,
+      "std": 0.0052
+    },
+    "mean_human_time_s": {
+      "mean": 13.98,
+      "std": 0.0
+    },
+    "bot_pass_rate": {
+      "mean": 0.1501,
+      "std": 0.0056
+    },
+    "security_rate": {
+      "mean": 0.8499,
+      "std": 0.0056
+    },
+    "challenge_free_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "a11y_violation_rate": {
+      "mean": 0.061,
+      "std": 0.0
+    },
+    "human_block_rate_by_subgroup": {
+      "desktop_mouse": {
+        "mean": 0.1739,
+        "std": 0.012
+      },
+      "touch_mobile": {
+        "mean": 0.1563,
+        "std": 0.0088
+      },
+      "keyboard_assistive": {
+        "mean": 0.1584,
+        "std": 0.0103
+      },
+      "motor_tremor": {
+        "mean": 0.18,
+        "std": 0.0107
+      }
+    }
+  },
+  "P2": {
+    "name": "P2: Adaptive + Accessible (Full)",
+    "bytes_collected": 216,
+    "human_pass_rate": {
+      "mean": 0.8797,
+      "std": 0.005
+    },
+    "mean_human_time_s": {
+      "mean": 12.02,
+      "std": 0.0
+    },
+    "bot_pass_rate": {
+      "mean": 0.1501,
+      "std": 0.0056
+    },
+    "security_rate": {
+      "mean": 0.8499,
+      "std": 0.0056
+    },
+    "challenge_free_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "a11y_violation_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "human_block_rate_by_subgroup": {
+      "desktop_mouse": {
+        "mean": 0.1163,
+        "std": 0.0134
+      },
+      "touch_mobile": {
+        "mean": 0.1173,
+        "std": 0.009
+      },
+      "keyboard_assistive": {
+        "mean": 0.1227,
+        "std": 0.0099
+      },
+      "motor_tremor": {
+        "mean": 0.125,
+        "std": 0.0109
+      }
+    }
+  },
+  "P3": {
+    "name": "P3: Adaptive + Accessible + Private (Min)",
+    "bytes_collected": 68,
+    "human_pass_rate": {
+      "mean": 0.8793,
+      "std": 0.0048
+    },
+    "mean_human_time_s": {
+      "mean": 12.03,
+      "std": 0.0
+    },
+    "bot_pass_rate": {
+      "mean": 0.1501,
+      "std": 0.0056
+    },
+    "security_rate": {
+      "mean": 0.8499,
+      "std": 0.0056
+    },
+    "challenge_free_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "a11y_violation_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "human_block_rate_by_subgroup": {
+      "desktop_mouse": {
+        "mean": 0.1164,
+        "std": 0.0124
+      },
+      "touch_mobile": {
+        "mean": 0.1178,
+        "std": 0.009
+      },
+      "keyboard_assistive": {
+        "mean": 0.1229,
+        "std": 0.0102
+      },
+      "motor_tremor": {
+        "mean": 0.1258,
+        "std": 0.0111
+      }
+    }
+  }
+}

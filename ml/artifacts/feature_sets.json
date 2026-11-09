@@ -1,0 +1,82 @@
+{
+  "full": {
+    "count": 25,
+    "names": [
+      "p_n_moves",
+      "p_path_len",
+      "p_straightness",
+      "p_speed_mean",
+      "p_speed_std",
+      "p_speed_max",
+      "p_acc_std",
+      "p_dir_changes_per_100px",
+      "p_pauses",
+      "p_dt_std",
+      "p_clicks",
+      "p_click_gap_std",
+      "k_n",
+      "k_gap_mean",
+      "k_gap_std",
+      "k_backspaces",
+      "t_since_mount",
+      "t_first_interaction",
+      "t_idle_ratio",
+      "t_scrolls",
+      "t_focus_changes",
+      "t_events_total",
+      "d_pointer_mouse",
+      "d_pointer_touch",
+      "d_pointer_none"
+    ],
+    "indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24
+    ]
+  },
+  "min": {
+    "count": 8,
+    "names": [
+      "p_dir_changes_per_100px",
+      "t_first_interaction",
+      "p_speed_std",
+      "p_speed_mean",
+      "p_path_len",
+      "p_acc_std",
+      "t_idle_ratio",
+      "k_gap_mean"
+    ],
+    "indices": [
+      7,
+      17,
+      4,
+      3,
+      1,
+      6,
+      18,
+      13
+    ]
+  }
+}

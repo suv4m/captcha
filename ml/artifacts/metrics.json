@@ -1,0 +1,359 @@
+{
+  "_disclaimer": "Simulated population with assumed parameters. Not real-world bot resistance.",
+  "dataset_sizes": {
+    "train": 12000,
+    "val": 3000,
+    "test": 6000
+  },
+  "seeds": {
+    "train": 101,
+    "val": 202,
+    "test": 303
+  },
+  "models_compared": [
+    {
+      "model": "RandomForest",
+      "val_roc_auc": 0.9051,
+      "val_pr_auc": 0.9348,
+      "fit_time_s": 3.96
+    },
+    {
+      "model": "LogisticRegression",
+      "val_roc_auc": 0.8824,
+      "val_pr_auc": 0.9223,
+      "fit_time_s": 0.14
+    },
+    {
+      "model": "HistGradientBoosting",
+      "val_roc_auc": 0.9082,
+      "val_pr_auc": 0.9367,
+      "fit_time_s": 3.27
+    },
+    {
+      "model": "XGBoost",
+      "val_roc_auc": 0.9093,
+      "val_pr_auc": 0.9368,
+      "fit_time_s": 2.91
+    }
+  ],
+  "full_model": {
+    "feature_count": 25,
+    "roc_auc": 0.829,
+    "pr_auc": 0.8805,
+    "tpr_at_1pct_fpr": 0.6297,
+    "brier_score": 0.1448,
+    "ece": 0.0698
+  },
+  "min_model": {
+    "feature_count": 8,
+    "selected_features": [
+      "p_dir_changes_per_100px",
+      "t_first_interaction",
+      "p_speed_std",
+      "p_speed_mean",
+      "p_path_len",
+      "p_acc_std",
+      "t_idle_ratio",
+      "k_gap_mean"
+    ],
+    "roc_auc": 0.8302,
+    "pr_auc": 0.8798,
+    "tpr_at_1pct_fpr": 0.636,
+    "brier_score": 0.1451,
+    "ece": 0.0754
+  },
+  "label_shuffle_test_auc": 0.4925,
+  "recall_by_bot_type": {
+    "instant": {
+      "count": 598,
+      "recall_full_p50": 1.0,
+      "recall_min_p50": 1.0,
+      "mean_score_full": 0.9943,
+      "mean_score_min": 0.9915,
+      "is_unseen": false
+    },
+    "linear": {
+      "count": 575,
+      "recall_full_p50": 1.0,
+      "recall_min_p50": 1.0,
+      "mean_score_full": 0.9943,
+      "mean_score_min": 0.9916,
+      "is_unseen": false
+    },
+    "noisy": {
+      "count": 586,
+      "recall_full_p50": 1.0,
+      "recall_min_p50": 1.0,
+      "mean_score_full": 0.9942,
+      "mean_score_min": 0.9916,
+      "is_unseen": false
+    },
+    "replay": {
+      "count": 621,
+      "recall_full_p50": 0.0966,
+      "recall_min_p50": 0.0918,
+      "mean_score_full": 0.2628,
+      "mean_score_min": 0.261,
+      "is_unseen": false
+    },
+    "humanized": {
+      "count": 620,
+      "recall_full_p50": 0.1516,
+      "recall_min_p50": 0.1806,
+      "mean_score_full": 0.2441,
+      "mean_score_min": 0.269,
+      "is_unseen": true
+    }
+  },
+  "false_positive_rate_by_human_subgroup": {
+    "desktop_mouse": {
+      "count": 732,
+      "fpr_full_p50": 0.0328,
+      "fpr_min_p50": 0.0396,
+      "mean_score_full": 0.1558,
+      "mean_score_min": 0.1475
+    },
+    "touch_mobile": {
+      "count": 770,
+      "fpr_full_p50": 0.0117,
+      "fpr_min_p50": 0.026,
+      "mean_score_full": 0.2055,
+      "mean_score_min": 0.2103
+    },
+    "keyboard_assistive": {
+      "count": 765,
+      "fpr_full_p50": 0.0026,
+      "fpr_min_p50": 0.0065,
+      "mean_score_full": 0.1885,
+      "mean_score_min": 0.1909
+    },
+    "motor_tremor": {
+      "count": 733,
+      "fpr_full_p50": 0.0068,
+      "fpr_min_p50": 0.0177,
+      "mean_score_full": 0.2018,
+      "mean_score_min": 0.2038
+    }
+  },
+  "auc_vs_feature_count": {
+    "4": 0.7916,
+    "6": 0.7863,
+    "8": 0.8289,
+    "12": 0.8472,
+    "25": 0.8425
+  },
+  "roc_curve_points": [
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0047,
+      "tpr": 0.6257
+    },
+    {
+      "fpr": 0.013,
+      "tpr": 0.6377
+    },
+    {
+      "fpr": 0.0243,
+      "tpr": 0.644
+    },
+    {
+      "fpr": 0.042,
+      "tpr": 0.651
+    },
+    {
+      "fpr": 0.0583,
+      "tpr": 0.6613
+    },
+    {
+      "fpr": 0.0723,
+      "tpr": 0.6683
+    },
+    {
+      "fpr": 0.0903,
+      "tpr": 0.6757
+    },
+    {
+      "fpr": 0.1107,
+      "tpr": 0.6827
+    },
+    {
+      "fpr": 0.1263,
+      "tpr": 0.6887
+    },
+    {
+      "fpr": 0.148,
+      "tpr": 0.6953
+    },
+    {
+      "fpr": 0.172,
+      "tpr": 0.7023
+    },
+    {
+      "fpr": 0.1963,
+      "tpr": 0.7087
+    },
+    {
+      "fpr": 0.2273,
+      "tpr": 0.7153
+    },
+    {
+      "fpr": 0.247,
+      "tpr": 0.7237
+    },
+    {
+      "fpr": 0.2733,
+      "tpr": 0.73
+    },
+    {
+      "fpr": 0.289,
+      "tpr": 0.737
+    },
+    {
+      "fpr": 0.3167,
+      "tpr": 0.7437
+    },
+    {
+      "fpr": 0.3323,
+      "tpr": 0.7517
+    },
+    {
+      "fpr": 0.3457,
+      "tpr": 0.758
+    },
+    {
+      "fpr": 0.366,
+      "tpr": 0.765
+    },
+    {
+      "fpr": 0.384,
+      "tpr": 0.772
+    },
+    {
+      "fpr": 0.4017,
+      "tpr": 0.7813
+    },
+    {
+      "fpr": 0.413,
+      "tpr": 0.788
+    },
+    {
+      "fpr": 0.435,
+      "tpr": 0.7947
+    },
+    {
+      "fpr": 0.448,
+      "tpr": 0.8023
+    },
+    {
+      "fpr": 0.4627,
+      "tpr": 0.8093
+    },
+    {
+      "fpr": 0.48,
+      "tpr": 0.8173
+    },
+    {
+      "fpr": 0.496,
+      "tpr": 0.8237
+    },
+    {
+      "fpr": 0.5073,
+      "tpr": 0.832
+    },
+    {
+      "fpr": 0.5213,
+      "tpr": 0.8393
+    },
+    {
+      "fpr": 0.543,
+      "tpr": 0.8473
+    },
+    {
+      "fpr": 0.5673,
+      "tpr": 0.855
+    },
+    {
+      "fpr": 0.5863,
+      "tpr": 0.8627
+    },
+    {
+      "fpr": 0.6007,
+      "tpr": 0.8723
+    },
+    {
+      "fpr": 0.6187,
+      "tpr": 0.88
+    },
+    {
+      "fpr": 0.634,
+      "tpr": 0.889
+    },
+    {
+      "fpr": 0.65,
+      "tpr": 0.8973
+    },
+    {
+      "fpr": 0.673,
+      "tpr": 0.905
+    },
+    {
+      "fpr": 0.6933,
+      "tpr": 0.9117
+    },
+    {
+      "fpr": 0.7087,
+      "tpr": 0.9217
+    },
+    {
+      "fpr": 0.7277,
+      "tpr": 0.9307
+    },
+    {
+      "fpr": 0.7373,
+      "tpr": 0.9377
+    },
+    {
+      "fpr": 0.7527,
+      "tpr": 0.9437
+    },
+    {
+      "fpr": 0.7707,
+      "tpr": 0.9503
+    },
+    {
+      "fpr": 0.7843,
+      "tpr": 0.9583
+    },
+    {
+      "fpr": 0.804,
+      "tpr": 0.966
+    },
+    {
+      "fpr": 0.8263,
+      "tpr": 0.9747
+    },
+    {
+      "fpr": 0.8493,
+      "tpr": 0.981
+    },
+    {
+      "fpr": 0.868,
+      "tpr": 0.9883
+    },
+    {
+      "fpr": 0.902,
+      "tpr": 0.994
+    },
+    {
+      "fpr": 0.997,
+      "tpr": 0.9997
+    },
+    {
+      "fpr": 1.0,
+      "tpr": 1.0
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adaptive and Accessible CAPTCHA — Demo</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script type="module" src="/widget/adaptive-captcha.js"></script>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span>Adaptive CAPTCHA</span>
+    </div>
+    <nav class="nav-links">
+      <a href="/" class="active">Demo</a>
+      <a href="/lab">Lab</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="demo-layout">
+      <!-- Left Column: Sign-In Form with Widget -->
+      <section class="card" aria-labelledby="signin-title">
+        <h2 id="signin-title">Account Sign-in</h2>
+        <p class="desc">Demonstration login protected by the adaptive CAPTCHA web component.</p>
+
+        <form id="loginForm" onsubmit="return false;">
+          <div class="form-group">
+            <label for="username">Username or email</label>
+            <input type="text" id="username" class="form-input" value="user@example.com" required>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" class="form-input" value="••••••••••••" required>
+          </div>
+
+          <div class="form-group">
+            <adaptive-captcha id="captchaWidget" endpoint="/api" site-key="demo-site-key" policy="P3"></adaptive-captcha>
+          </div>
+
+          <button type="submit" id="loginSubmitBtn" class="submit-btn">Sign in</button>
+
+          <div class="login-status" id="loginStatus"></div>
+        </form>
+      </section>
+
+      <!-- Right Column: Live Decision Trace Panel -->
+      <aside class="card trace-panel" id="traceContainer" aria-labelledby="trace-title">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h2 id="trace-title" style="margin: 0; font-family: var(--font-sans);">Decision Trace</h2>
+          <button type="button" id="toggleTraceBtn" class="select-control" style="font-size: 11px;">Hide panel</button>
+        </div>
+
+        <div class="trace-controls" id="traceControls">
+          <div class="control-row">
+            <label for="policySelect">Policy</label>
+            <select id="policySelect" class="select-control">
+              <option value="P3" selected>P3: Adaptive + Accessible + Private (Min)</option>
+              <option value="P2">P2: Adaptive + Accessible (Full)</option>
+              <option value="P1">P1: Adaptive (Unconstrained)</option>
+              <option value="P0">P0: Fixed (vis2)</option>
+            </select>
+          </div>
+
+          <div class="control-row">
+            <label for="strictnessSlider">Strictness (Breach cost B: <span id="bVal">60</span>)</label>
+            <input type="range" id="strictnessSlider" class="slider-control" min="20" max="200" value="60" step="5">
+          </div>
+        </div>
+
+        <div id="traceOutput">
+          <div class="trace-section">
+            <div class="trace-label">Calculated Risk (p)</div>
+            <div style="display: flex; justify-content: space-between; font-weight: bold;">
+              <span id="traceP">0.0000</span>
+              <span id="traceBand" class="badge-tag badge-low">LOW</span>
+            </div>
+            <div class="risk-bar-container">
+              <div class="risk-bar-fill" id="traceBar"></div>
+            </div>
+          </div>
+
+          <div class="trace-section">
+            <div class="trace-label">Candidate Costs (Top 3)</div>
+            <div id="traceCandidates" style="font-size: 11px; color: var(--cap-muted);">
+              Trigger verification to view candidate evaluation.
+            </div>
+          </div>
+
+          <div class="trace-section">
+            <div class="trace-label">Chosen Challenge</div>
+            <div id="traceChosen" style="font-weight: 600;">none (friction-free silent pass)</div>
+          </div>
+
+          <div class="trace-section">
+            <div class="trace-label">Allowed Set (Filtered by Accessibility)</div>
+            <div class="chips-row" id="traceAllowed">
+              <span class="chip">none</span>
+            </div>
+          </div>
+
+          <div class="trace-section">
+            <div class="trace-label">Privacy Payload</div>
+            <div><span id="traceBytes">68</span> bytes sent (<span id="traceFeaturesCount">8</span> features)</div>
+          </div>
+
+          <div class="step-up-alert" id="stepUpAlert">
+            <strong>Security Notice:</strong> The declared accessibility set offers limited resistance against this risk profile. Secondary verification is advised.
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer>
+    Simulation model with assumed parameters. Built offline with vanilla Web Components & FastAPI.
+  </footer>
+
+  <script>
+    const widget = document.getElementById("captchaWidget");
+    const policySelect = document.getElementById("policySelect");
+    const strictnessSlider = document.getElementById("strictnessSlider");
+    const bVal = document.getElementById("bVal");
+    const loginForm = document.getElementById("loginForm");
+    const loginStatus = document.getElementById("loginStatus");
+    const toggleTraceBtn = document.getElementById("toggleTraceBtn");
+    const traceOutput = document.getElementById("traceOutput");
+
+    let latestToken = null;
+
+    // Policy change
+    policySelect.addEventListener("change", (e) => {
+      widget.setAttribute("policy", e.target.value);
+    });
+
+    // Slider change
+    strictnessSlider.addEventListener("input", (e) => {
+      bVal.textContent = e.target.value;
+    });
+
+    // Toggle trace panel
+    let panelVisible = true;
+    toggleTraceBtn.addEventListener("click", () => {
+      panelVisible = !panelVisible;
+      traceOutput.style.display = panelVisible ? "block" : "none";
+      document.getElementById("traceControls").style.display = panelVisible ? "flex" : "none";
+      toggleTraceBtn.textContent = panelVisible ? "Hide panel" : "Show panel";
+    });
+
+    // Listen for decision trace from widget
+    widget.addEventListener("captcha-decision", (e) => {
+      const trace = e.detail;
+      document.getElementById("traceP").textContent = trace.p.toFixed(4);
+      
+      const bandEl = document.getElementById("traceBand");
+      bandEl.textContent = trace.band.toUpperCase();
+      bandEl.className = "badge-tag badge-" + trace.band;
+
+      const fill = document.getElementById("traceBar");
+      fill.style.width = Math.min(100, Math.max(0, trace.p * 100)) + "%";
+      if (trace.p >= 0.65) fill.style.background = "var(--danger)";
+      else if (trace.p >= 0.15) fill.style.background = "#B26A00";
+      else fill.style.background = "var(--accent)";
+
+      document.getElementById("traceChosen").textContent = `${trace.chosen_id} (${trace.chosen_type})`;
+
+      // Candidates
+      const candEl = document.getElementById("traceCandidates");
+      if (trace.top_3_candidates && trace.top_3_candidates.length > 0) {
+        candEl.innerHTML = trace.top_3_candidates.map(c => 
+          `<div>• <strong>${c.id}</strong> (T=${c.T}s, Sb=${c.Sb}) -> cost: ${c.cost}</div>`
+        ).join("");
+      }
+
+      // Allowed chips
+      const allowEl = document.getElementById("traceAllowed");
+      allowEl.innerHTML = trace.allowed_ids.map(id => `<span class="chip">${id}</span>`).join("");
+
+      document.getElementById("traceBytes").textContent = trace.data_sent_bytes;
+      document.getElementById("traceFeaturesCount").textContent = trace.policy === "P1" || trace.policy === "P2" ? 25 : 8;
+
+      // Step up note
+      const stepUp = document.getElementById("stepUpAlert");
+      stepUp.style.display = trace.step_up_suggested ? "block" : "none";
+    });
+
+    widget.addEventListener("captcha-verified", (e) => {
+      latestToken = e.detail.token;
+      loginStatus.className = "login-status";
+      loginStatus.style.display = "none";
+    });
+
+    // Form submit
+    loginForm.addEventListener("submit", async () => {
+      if (!latestToken) {
+        loginStatus.className = "login-status error";
+        loginStatus.textContent = "Please complete the CAPTCHA verification first.";
+        return;
+      }
+
+      loginStatus.className = "login-status";
+      loginStatus.textContent = "Authenticating with server...";
+      loginStatus.style.display = "block";
+
+      try {
+        const res = await fetch("/api/demo/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: document.getElementById("username").value,
+            password: document.getElementById("password").value,
+            captcha_token: latestToken
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          loginStatus.className = "login-status success";
+          loginStatus.textContent = data.message;
+        } else {
+          loginStatus.className = "login-status error";
+          loginStatus.textContent = data.detail || "Authentication failed.";
+        }
+      } catch (err) {
+        loginStatus.className = "login-status error";
+        loginStatus.textContent = err.message;
+      }
+    });
+  </script>
+</body>
+</html>
+

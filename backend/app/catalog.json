@@ -1,0 +1,127 @@
+{
+  "_disclaimer": "All values are assumed parameters for simulation and research modeling only. Not real-world empirical constants.",
+  "incompatible_penalty": {
+    "Sh": 0.12,
+    "T": 45.0
+  },
+  "default_breach_cost": 60.0,
+  "challenges": [
+    {
+      "id": "none",
+      "type": "none",
+      "level": 0,
+      "T": 0.0,
+      "Sh": 1.00,
+      "Sb": 1.00,
+      "incompatible_with": []
+    },
+    {
+      "id": "pow1",
+      "type": "pow",
+      "level": 1,
+      "T": 0.2,
+      "Sh": 0.99,
+      "Sb": 0.85,
+      "incompatible_with": []
+    },
+    {
+      "id": "pow2",
+      "type": "pow",
+      "level": 2,
+      "T": 0.8,
+      "Sh": 0.98,
+      "Sb": 0.65,
+      "incompatible_with": []
+    },
+    {
+      "id": "pow3",
+      "type": "pow",
+      "level": 3,
+      "T": 3.0,
+      "Sh": 0.96,
+      "Sb": 0.50,
+      "incompatible_with": []
+    },
+    {
+      "id": "vis1",
+      "type": "visual",
+      "level": 1,
+      "T": 5.0,
+      "Sh": 0.97,
+      "Sb": 0.55,
+      "incompatible_with": ["vision"]
+    },
+    {
+      "id": "vis2",
+      "type": "visual",
+      "level": 2,
+      "T": 8.0,
+      "Sh": 0.93,
+      "Sb": 0.35,
+      "incompatible_with": ["vision"]
+    },
+    {
+      "id": "vis3",
+      "type": "visual",
+      "level": 3,
+      "T": 12.0,
+      "Sh": 0.88,
+      "Sb": 0.15,
+      "incompatible_with": ["vision"]
+    },
+    {
+      "id": "aud1",
+      "type": "audio",
+      "level": 1,
+      "T": 12.0,
+      "Sh": 0.93,
+      "Sb": 0.55,
+      "incompatible_with": ["hearing"]
+    },
+    {
+      "id": "aud2",
+      "type": "audio",
+      "level": 2,
+      "T": 16.0,
+      "Sh": 0.87,
+      "Sb": 0.35,
+      "incompatible_with": ["hearing"]
+    },
+    {
+      "id": "aud3",
+      "type": "audio",
+      "level": 3,
+      "T": 22.0,
+      "Sh": 0.78,
+      "Sb": 0.20,
+      "incompatible_with": ["hearing"]
+    },
+    {
+      "id": "drg1",
+      "type": "drag",
+      "level": 1,
+      "T": 5.0,
+      "Sh": 0.97,
+      "Sb": 0.50,
+      "incompatible_with": ["vision", "motor"]
+    },
+    {
+      "id": "drg2",
+      "type": "drag",
+      "level": 2,
+      "T": 8.0,
+      "Sh": 0.93,
+      "Sb": 0.30,
+      "incompatible_with": ["vision", "motor"]
+    },
+    {
+      "id": "drg3",
+      "type": "drag",
+      "level": 3,
+      "T": 12.0,
+      "Sh": 0.85,
+      "Sb": 0.18,
+      "incompatible_with": ["vision", "motor"]
+    }
+  ]
+}

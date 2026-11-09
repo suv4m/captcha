@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adaptive and Accessible CAPTCHA — Research Lab</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    .lab-banner {
+      background: rgba(220, 150, 0, 0.12);
+      border: 1px solid #B26A00;
+      color: #B26A00;
+      padding: 10px 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+
+    .data-table th, .data-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .data-table th {
+      color: var(--muted);
+      font-weight: 600;
+      background: var(--bg);
+    }
+
+    .data-table tr:hover td {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .stat-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .stat-highlight {
+      background: rgba(11, 107, 93, 0.15);
+      color: var(--accent);
+    }
+
+    .stat-warn {
+      background: rgba(179, 38, 30, 0.15);
+      color: var(--danger);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span>Adaptive CAPTCHA</span>
+    </div>
+    <nav class="nav-links">
+      <a href="/">Demo</a>
+      <a href="/lab" class="active">Lab</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="lab-banner">
+      <strong>Research Disclaimer:</strong> Simulated population with assumed parameters. Security metrics represent synthetic attacker resistance under parametric models, not empirical web telemetry.
+    </div>
+
+    <!-- Section 1: Four-Policy Comparison -->
+    <section class="card" style="margin-bottom: 24px;">
+      <h2>1. Policy Benchmark (Held-out Test Population, 20 Runs)</h2>
+      <p class="desc">Evaluating how accessibility constraints and privacy minimization affect security vs. human effort trade-offs.</p>
+      
+      <div style="overflow-x: auto;">
+        <table class="data-table" id="policyTable">
+          <thead>
+            <tr>
+              <th>Policy</th>
+              <th>Bytes / Sess</th>
+              <th>Human Pass Rate</th>
+              <th>Mean Time</th>
+              <th>Security (1 - BotPass)</th>
+              <th>Challenge-Free</th>
+              <th>A11y Violations</th>
+            </tr>
+          </thead>
+          <tbody id="policyTableBody">
+            <tr><td colspan="7" style="text-align:center;">Loading experiment results...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 2: Live Strictness Simulator -->
+    <section class="card" style="margin-bottom: 24px;">
+      <h2>2. Interactive Policy Simulation</h2>
+      <p class="desc">Adjust breach cost (B) to recompute policy outcomes live across the 6,000 held-out test sessions using vectorized evaluation.</p>
+
+      <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 16px; flex-wrap: wrap;">
+        <div>
+          <label for="labPolicy">Policy: </label>
+          <select id="labPolicy" class="select-control">
+            <option value="P3" selected>P3: Adaptive + Accessible + Private (Min)</option>
+            <option value="P2">P2: Adaptive + Accessible (Full)</option>
+            <option value="P1">P1: Adaptive (Unconstrained)</option>
+            <option value="P0">P0: Fixed vis2</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <label for="labB">Breach Cost B: <strong id="labBVal">60</strong></label>
+          <input type="range" id="labB" min="20" max="200" value="60" step="5" class="slider-control" style="width: 180px;">
+        </div>
+        <button type="button" id="reSimulateBtn" class="btn-primary" style="padding: 6px 14px;">Re-run Simulation</button>
+      </div>
+
+      <div id="simStatsRow" style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-family: var(--font-mono); font-size: 13px;">
+        <!-- Filled dynamically -->
+      </div>
+    </section>
+
+    <div class="grid-2">
+      <!-- Section 3: Model Comparison & ROC -->
+      <section class="card">
+        <h2>3. Classifier Comparison & ROC</h2>
+        <p class="desc">Comparing baseline ML architectures on identical validation splits.</p>
+        <table class="data-table" id="modelsTable">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Val ROC-AUC</th>
+              <th>Val PR-AUC</th>
+              <th>Fit Time</th>
+            </tr>
+          </thead>
+          <tbody id="modelsTableBody"></tbody>
+        </table>
+
+        <div id="rocChart" style="margin-top: 20px;"></div>
+      </section>
+
+      <!-- Section 4 & 5: Subgroup Disparity & Feature Scaling -->
+      <section class="card">
+        <h2>4. Fairness by Subgroup (FPR)</h2>
+        <p class="desc">False-positive rate (humans incorrectly challenged or blocked) by accessibility subgroup.</p>
+        <div id="subgroupChart"></div>
+
+        <h2 style="margin-top: 28px;">5. Feature Minimization (AUC vs. k)</h2>
+        <p class="desc">Measuring classifier performance degradation as feature count is pruned.</p>
+        <div id="featuresChart"></div>
+      </section>
+    </div>
+
+    <!-- Section 6: Recall by Bot Type -->
+    <section class="card" style="margin-top: 24px;">
+      <h2>6. Attacker Detection & Generalization to Unseen Threats</h2>
+      <p class="desc">Detection rate by bot archetype. Note: <strong>humanized</strong> is strictly held out from training to simulate zero-day bot variants.</p>
+      <div id="botRecallChart" style="margin-top: 14px;"></div>
+    </section>
+  </main>
+
+  <footer>
+    Simulation model with assumed parameters. Built offline with vanilla Web Components & FastAPI.
+  </footer>
+
+  <script type="module">
+    import { renderLineChart, renderBarChart } from "/static/chart.js";
+
+    async function loadLabData() {
+      try {
+        const res = await fetch("/api/lab/results");
+        if (!res.ok) throw new Error("Could not load results");
+        const { results, metrics } = await res.json();
+
+        // 1. Populate Four-Policy Table
+        const tbody = document.getElementById("policyTableBody");
+        tbody.innerHTML = "";
+        for (const [key, p] of Object.entries(results)) {
+          const isA11yZero = p.a11y_violation_rate.mean === 0;
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td><strong>${p.name}</strong></td>
+            <td><code>${p.bytes_collected} B</code></td>
+            <td>${(p.human_pass_rate.mean * 100).toFixed(1)}% <small style="color:var(--muted)">±${(p.human_pass_rate.std*100).toFixed(1)}%</small></td>
+            <td>${p.mean_human_time_s.mean.toFixed(1)}s</td>
+            <td><strong>${(p.security_rate.mean * 100).toFixed(1)}%</strong></td>
+            <td>${(p.challenge_free_rate.mean * 100).toFixed(1)}%</td>
+            <td><span class="stat-pill ${isA11yZero ? 'stat-highlight' : 'stat-warn'}">${(p.a11y_violation_rate.mean * 100).toFixed(2)}%</span></td>
+          `;
+          tbody.appendChild(row);
+        }
+
+        // 2. Model comparison table
+        const mbody = document.getElementById("modelsTableBody");
+        mbody.innerHTML = "";
+        metrics.models_compared.forEach(m => {
+          const r = document.createElement("tr");
+          r.innerHTML = `
+            <td>${m.model}</td>
+            <td>${m.val_roc_auc.toFixed(4)}</td>
+            <td>${m.val_pr_auc.toFixed(4)}</td>
+            <td>${m.fit_time_s}s</td>
+          `;
+          mbody.appendChild(r);
+        });
+
+        // 3. ROC Chart
+        if (metrics.roc_curve_points) {
+          renderLineChart(document.getElementById("rocChart"), {
+            data: metrics.roc_curve_points,
+            xKey: "fpr",
+            yKey: "tpr",
+            title: `Receiver Operating Characteristic (MIN Model, AUC = ${metrics.min_model.roc_auc.toFixed(3)})`,
+            xLabel: "False Positive Rate (FPR)",
+            yLabel: "True Positive Rate (TPR)",
+            minX: 0, maxX: 1, minY: 0, maxY: 1
+          });
+        }
+
+        // 4. Subgroup chart (Bar chart of FPR)
+        const subgroupData = Object.entries(metrics.false_positive_rate_by_human_subgroup).map(([k, v]) => ({
+          name: k.replace("_", " "),
+          fpr: v.fpr_min_p50
+        }));
+        renderBarChart(document.getElementById("subgroupChart"), {
+          data: subgroupData,
+          labelKey: "name",
+          valueKey: "fpr",
+          title: "False-Positive Rate by Human Subgroup (MIN Model)",
+          maxVal: 0.1,
+          unit: "%"
+        });
+
+        // 5. AUC vs k chart
+        const kData = Object.entries(metrics.auc_vs_feature_count).map(([k, v]) => ({
+          k: Number(k),
+          auc: v
+        }));
+        renderLineChart(document.getElementById("featuresChart"), {
+          data: kData,
+          xKey: "k",
+          yKey: "auc",
+          title: "Test ROC-AUC vs. Feature Count (Pruning Curve)",
+          xLabel: "Number of features (k)",
+          yLabel: "Test AUC",
+          minX: 4, maxX: 25, minY: 0.70, maxY: 0.90
+        });
+
+        // 6. Bot recall chart
+        const botData = Object.entries(metrics.recall_by_bot_type).map(([k, v]) => ({
+          name: k + (v.is_unseen ? " (UNSEEN)" : ""),
+          recall: v.recall_min_p50,
+          highlight: v.is_unseen
+        }));
+        renderBarChart(document.getElementById("botRecallChart"), {
+          data: botData,
+          labelKey: "name",
+          valueKey: "recall",
+          title: "Detection Recall by Bot Archetype (Threshold p > 0.5)",
+          maxVal: 1.0,
+          unit: "%"
+        });
+
+      } catch (err) {
+        console.error("Failed to load lab data:", err);
+      }
+    }
+
+    // Interactive Slider Handler
+    const labB = document.getElementById("labB");
+    const labBVal = document.getElementById("labBVal");
+    const labPolicy = document.getElementById("labPolicy");
+    const simStatsRow = document.getElementById("simStatsRow");
+    const reSimulateBtn = document.getElementById("reSimulateBtn");
+
+    labB.addEventListener("input", () => {
+      labBVal.textContent = labB.value;
+    });
+
+    async function runLiveSimulation() {
+      const b = labB.value;
+      const pol = labPolicy.value;
+      simStatsRow.innerHTML = "<em>Simulating 6,000 sessions with vector model...</em>";
+
+      try {
+        const res = await fetch(`/api/lab/simulate?policy=${pol}&breach_cost=${b}&runs=15`);
+        const data = await res.json();
+        simStatsRow.innerHTML = `
+          <div class="card" style="padding: 10px 14px; flex: 1;">
+            <div style="color:var(--muted); font-size:11px;">SECURITY RATE</div>
+            <div style="font-size:16px; font-weight:bold;">${(data.security_rate * 100).toFixed(1)}%</div>
+          </div>
+          <div class="card" style="padding: 10px 14px; flex: 1;">
+            <div style="color:var(--muted); font-size:11px;">MEAN HUMAN TIME</div>
+            <div style="font-size:16px; font-weight:bold;">${data.mean_human_time_s.toFixed(1)}s</div>
+          </div>
+          <div class="card" style="padding: 10px 14px; flex: 1;">
+            <div style="color:var(--muted); font-size:11px;">HUMAN PASS RATE</div>
+            <div style="font-size:16px; font-weight:bold;">${(data.human_pass_rate * 100).toFixed(1)}%</div>
+          </div>
+          <div class="card" style="padding: 10px 14px; flex: 1;">
+            <div style="color:var(--muted); font-size:11px;">A11Y VIOLATIONS</div>
+            <div style="font-size:16px; font-weight:bold; color:${data.a11y_violation_rate === 0 ? 'var(--accent)' : 'var(--danger)'};">
+              ${(data.a11y_violation_rate * 100).toFixed(2)}%
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        simStatsRow.innerHTML = `<span style="color:var(--danger)">Simulation failed: ${err.message}</span>`;
+      }
+    }
+
+    reSimulateBtn.addEventListener("click", runLiveSimulation);
+    labB.addEventListener("change", runLiveSimulation);
+    labPolicy.addEventListener("change", runLiveSimulation);
+
+    // Initial loads
+    loadLabData();
+    runLiveSimulation();
+  </script>
+</body>
+</html>
+
