@@ -1,4 +1,4 @@
-import { extractFeatures, FEATURE_NAMES } from "./features.js";
+import { extractFeatures, buildFeaturePayload, FEATURE_NAMES } from "./features.js";
 
 const TEMPLATE = document.createElement("template");
 TEMPLATE.innerHTML = `
@@ -460,7 +460,21 @@ export class AdaptiveCaptcha extends HTMLElement {
   connectedCallback() {
     this._bindEvents();
     this._startCollector();
+    this._loadConfig();
     this._updatePrivacyNotice();
+  }
+
+  async _loadConfig() {
+    try {
+      const mode = (this.policy === "P1" || this.policy === "P2") ? "full" : "min";
+      const res = await fetch(`${this.endpoint}/config?mode=${mode}`);
+      if (res.ok) {
+        const data = await res.json();
+        this._requiredFeatures = data.required_features;
+      }
+    } catch (e) {
+      // offline / pre-load error
+    }
   }
 
   disconnectedCallback() {
@@ -571,17 +585,19 @@ export class AdaptiveCaptcha extends HTMLElement {
     };
 
     // Extract features locally (privacy by construction)
-    const allFeatures = extractFeatures(trace);
-
-    // Filter to required features based on policy
-    let payloadFeatures = allFeatures;
-    if (this.policy === "P3" || !this.policy) {
-      // Live default is MIN (8 features)
-      payloadFeatures = allFeatures.slice(0, 8); // Backend accepts MIN directly
+    const mode = (this.policy === "P1" || this.policy === "P2") ? "full" : "min";
+    if (!this._requiredFeatures) {
+      await this._loadConfig();
     }
+    const requiredNames = this._requiredFeatures || (mode === "full" ? FEATURE_NAMES : [
+      "p_dir_changes_per_100px", "t_first_interaction", "p_speed_std", "p_speed_mean",
+      "p_path_len", "p_acc_std", "t_idle_ratio", "k_gap_mean"
+    ]);
 
+    const payloadFeatures = buildFeaturePayload(trace, requiredNames);
+    const featureCount = Object.keys(payloadFeatures).length;
     const payloadBytes = new TextEncoder().encode(JSON.stringify(payloadFeatures)).length;
-    this._updatePrivacyNotice(payloadFeatures.length, payloadBytes);
+    this._updatePrivacyNotice(featureCount, payloadBytes);
 
     const needs = this._getSelectedNeeds();
 

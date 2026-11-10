@@ -7,8 +7,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 from ml.simulate import generate_bot_trace, generate_human_trace, ALL_BOT_TYPES
-from ml.extract import extract_features
-from backend.app.risk import score_session_risk
+from ml.extract import extract_features, FEATURE_NAMES
+from backend.app.risk import score_session_risk, get_required_features
 from backend.app.decision import select_best_challenge
 
 
@@ -29,8 +29,10 @@ def run_bot_demo(runs_per_type: int = 5):
         for _ in range(runs_per_type):
             tr = generate_bot_trace(rng, btype, human_corpus=human_corpus)
             feats = extract_features(tr)
+            feat_dict = {name: val for name, val in zip(FEATURE_NAMES, feats)}
+            req_dict = {name: feat_dict[name] for name in get_required_features("min")}
             # Evaluate with MIN model (the live production default)
-            p = score_session_risk(feats, mode="min")
+            p = score_session_risk(req_dict, mode="min")
             scores.append(p)
 
             decision = select_best_challenge(p, access_needs=[], B=60.0)

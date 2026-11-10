@@ -1,7 +1,8 @@
 import json
 import joblib
 import numpy as np
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any, Optional
+from fastapi import HTTPException
 from backend.app.config import ARTIFACTS_DIR
 
 _CAL_MIN = None
@@ -27,40 +28,31 @@ def get_required_features(mode: str = "min") -> List[str]:
     return _FEATURE_SETS["min"]["names"]
 
 
-def score_session_risk(features: Union[List[float], Dict[str, float]], mode: str = "min") -> float:
+def score_session_risk(features: Dict[str, float], mode: str = "min") -> float:
     _load_models()
-    min_indices = _FEATURE_SETS["min"]["indices"]
 
-    if isinstance(features, dict):
-        # Dictionary of feature name -> value
-        req = get_required_features(mode)
-        vec = [float(features.get(name, 0.0)) for name in req]
-        X = np.array([vec], dtype=np.float32)
-        if mode == "full":
-            p = float(_CAL_FULL.predict_proba(X)[0, 1])
-        else:
-            p = float(_CAL_MIN.predict_proba(X)[0, 1])
+    if not isinstance(features, dict):
+        raise HTTPException(status_code=422, detail="features must be a dictionary keyed by feature name")
+
+    req = get_required_features(mode)
+    given_keys = set(features.keys())
+    req_keys = set(req)
+
+    if given_keys != req_keys:
+        missing = list(req_keys - given_keys)
+        unknown = list(given_keys - req_keys)
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid features: missing={missing}, unknown={unknown}"
+        )
+
+    vec = [float(features[name]) for name in req]
+    X = np.array([vec], dtype=np.float32)
+
+    if mode == "full":
+        p = float(_CAL_FULL.predict_proba(X)[0, 1])
     else:
-        # List of floats
-        vec = [float(v) for v in features]
-        if len(vec) == 25:
-            # Full vector passed
-            X_full = np.array([vec], dtype=np.float32)
-            if mode == "full":
-                p = float(_CAL_FULL.predict_proba(X_full)[0, 1])
-            else:
-                X_min = X_full[:, min_indices]
-                p = float(_CAL_MIN.predict_proba(X_min)[0, 1])
-        elif len(vec) == 8:
-            # Min vector passed directly
-            X_min = np.array([vec], dtype=np.float32)
-            p = float(_CAL_MIN.predict_proba(X_min)[0, 1])
-        else:
-            # Fallback zero pad
-            padded = vec + [0.0] * max(0, 25 - len(vec))
-            X_full = np.array([padded[:25]], dtype=np.float32)
-            X_min = X_full[:, min_indices]
-            p = float(_CAL_MIN.predict_proba(X_min)[0, 1])
+        p = float(_CAL_MIN.predict_proba(X)[0, 1])
 
     return max(0.0, min(1.0, float(p)))
 

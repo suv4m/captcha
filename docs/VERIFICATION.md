@@ -381,6 +381,40 @@ Result: PASS (Gate G5)
 4. **Test Hook Security**: Verified hook returns 404 when `CAPTCHA_TEST_MODE=0`.
 5. **Portability Guarantee**: 100% of 36 unit/E2E tests and Node parity test pass out of the box in a fresh clean directory.
 
+---
+
+## Fix 1: train/serve feature mismatch
+
+### Failing Test Output (Pre-fix)
+```
+Command: pytest -v tests/test_fix1_gate.py
+Output:
+FAILED tests/test_fix1_gate.py::test_gate_test_a_js_payload_names_and_order
+FAILED tests/test_fix1_gate.py::test_gate_test_b_risk_parity_python_vs_js - RuntimeError: SyntaxError: The requested module './widget/features.js' does not provide an export named 'buildFeaturePayload'
+FAILED tests/test_fix1_gate.py::test_gate_test_c_missing_or_unknown_names_return_422 - AssertionError: Expected 422 for missing names, got 200
+============================= 3 failed in 29.39s ==============================
+```
+
+### Gate Passing Verification (Post-fix)
+```
+Command: pytest -v tests/test_fix1_gate.py
+Output:
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.2.0, pluggy-1.7.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\captcha
+plugins: anyio-4.12.1
+collecting ... collected 3 items
+
+tests/test_fix1_gate.py::test_gate_test_a_js_payload_names_and_order PASSED [ 33%]
+tests/test_fix1_gate.py::test_gate_test_b_risk_parity_python_vs_js PASSED [ 66%]
+tests/test_fix1_gate.py::test_gate_test_c_missing_or_unknown_names_return_422 PASSED [100%]
+
+============================== 3 passed in 8.70s ==============================
+Result: PASS
+```
+
+
 
 
 

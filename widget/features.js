@@ -31,6 +31,21 @@ export const FEATURE_NAMES = [
   "d_pointer_none",
 ];
 
+export function buildFeaturePayload(trace, requiredNames) {
+  const allFeatures = extractFeatures(trace);
+  const nameToVal = {};
+  for (let i = 0; i < FEATURE_NAMES.length; i++) {
+    nameToVal[FEATURE_NAMES[i]] = allFeatures[i];
+  }
+  const payload = {};
+  for (const name of requiredNames) {
+    if (Object.prototype.hasOwnProperty.call(nameToVal, name)) {
+      payload[name] = nameToVal[name];
+    }
+  }
+  return payload;
+}
+
 function mean(arr) {
   if (arr.length === 0) return 0.0;
   let sum = 0.0;

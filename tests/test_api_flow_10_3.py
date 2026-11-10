@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from backend.app.main import app
 from backend.app.store import store
+from backend.app.risk import get_required_features
 
 
 @pytest.fixture
@@ -12,10 +13,14 @@ def client():
     return TestClient(app)
 
 
+def _get_dummy_features():
+    return {k: 0.0 for k in get_required_features("min")}
+
+
 def test_full_flow_all_four_types(client):
     """Run full session -> solve -> siteverify flow for each challenge type."""
     # Dummy features that produce high risk (triggering challenges)
-    bot_features = [0.0] * 25
+    bot_features = _get_dummy_features()
 
     for ctype in ["visual", "audio", "drag", "pow"]:
         # We enforce type by setting access_needs appropriately or selecting
@@ -107,7 +112,7 @@ def test_400ms_anti_automation_rule(client):
     """Solves faster than 400 ms fail as automation."""
     res = client.post("/api/session", json={
         "site_key": "test_site",
-        "features": [0.0] * 25,
+        "features": _get_dummy_features(),
         "access_needs": ["vision", "hearing"],
         "breach_cost": 100.0
     })
@@ -133,7 +138,7 @@ def test_attempts_and_lock_rule(client):
     """3 attempts per session; fresh challenge after failure; locked on 3rd fail."""
     res = client.post("/api/session", json={
         "site_key": "test_site",
-        "features": [0.0] * 25,
+        "features": _get_dummy_features(),
         "access_needs": [],
         "breach_cost": 100.0
     })
@@ -181,7 +186,7 @@ def test_switch_endpoint_and_limit(client):
     """User escape switch allows at most 2 swaps and excludes current type."""
     res = client.post("/api/session", json={
         "site_key": "test_site",
-        "features": [0.0] * 25,
+        "features": _get_dummy_features(),
         "access_needs": [],
         "breach_cost": 100.0
     })
@@ -210,7 +215,7 @@ def test_audio_endpoint_headers(client):
     """GET /api/challenge/{id}/audio returns audio/wav with Cache-Control: no-store."""
     res = client.post("/api/session", json={
         "site_key": "test_site",
-        "features": [0.0] * 25,
+        "features": _get_dummy_features(),
         "access_needs": ["vision"],
         "breach_cost": 120.0
     })

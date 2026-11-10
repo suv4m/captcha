@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from backend.app.main import app
 from backend.app.decision import select_best_challenge
+from backend.app.risk import get_required_features
 
 
 @pytest.fixture
@@ -59,8 +60,8 @@ def test_accessibility_constraint_30_sessions():
 
 def test_keyboard_assistive_flow(client):
     """A keyboard-assistive run completes a challenge using only keyboard events."""
-    # Keyboard assistive trace with no pointer
-    keyboard_features = [0.0] * 22 + [0.0, 0.0, 1.0]  # d_pointer_none = 1
+    # Keyboard assistive trace with dictionary features
+    keyboard_features = {k: 0.0 for k in get_required_features("min")}
 
     res = client.post("/api/session", json={
         "site_key": "test_keyboard",

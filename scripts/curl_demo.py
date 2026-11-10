@@ -13,6 +13,7 @@ sys.path.insert(0, str(BASE_DIR))
 # Enable test mode so we can fetch answer via test hook or store
 os.environ["CAPTCHA_TEST_MODE"] = "1"
 from backend.app.main import app
+from backend.app.risk import get_required_features
 from backend.app.store import store
 
 
@@ -52,7 +53,7 @@ def run_demo():
         # 1. POST /api/session
         sess_payload = json.dumps({
             "site_key": "curl_demo_key",
-            "features": [0.0] * 25,
+            "features": {k: 0.0 for k in get_required_features("min")},
             "access_needs": needs,
             "breach_cost": 150.0
         })
