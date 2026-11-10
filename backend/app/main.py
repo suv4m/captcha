@@ -348,13 +348,45 @@ def switch_challenge(req: SwitchRequest):
     current_type = sess.get("challenge_type")
     filter_accessible = sess.get("policy") != "P1"
 
-    # Re-run selection excluding current type using updated access needs
-    decision = select_best_challenge(
-        sess["p"], sess.get("access_needs", []), B=sess.get("B", DEFAULT_BREACH_COST),
-        exclude_type=current_type, filter_accessible=filter_accessible
-    )
+    target_type = req.target_type
+    if target_type == "automatic":
+        target_type = "pow"
 
-    chosen_c = decision["chosen_challenge"]
+    if target_type:
+        if target_type not in ["visual", "audio", "drag", "pow"]:
+            raise HTTPException(status_code=400, detail=f"Invalid target_type: {target_type}")
+        if target_type == current_type:
+            raise HTTPException(status_code=400, detail=f"Target type cannot be current challenge type: {target_type}")
+
+        from backend.app.decision import CATALOG_CHALLENGES, compute_cost
+        candidates = [c for c in CATALOG_CHALLENGES if c["type"] == target_type]
+        needs_set = set(sess.get("access_needs", []))
+        if filter_accessible:
+            has_cognitive = "cognitive" in needs_set
+            valid = []
+            for c in candidates:
+                if has_cognitive and c["level"] == 3:
+                    continue
+                if not needs_set.isdisjoint(c["incompatible_with"]):
+                    continue
+                valid.append(c)
+            candidates = valid or candidates
+
+        if not candidates:
+            raise HTTPException(status_code=400, detail=f"No compatible level found for target_type '{target_type}'")
+
+        B = sess.get("B", DEFAULT_BREACH_COST)
+        p = sess["p"]
+        scored = [(compute_cost(c, p, B), c["T"], c["Sb"], c) for c in candidates]
+        scored.sort(key=lambda item: (round(item[0], 6), item[1], item[2]))
+        chosen_c = scored[0][3]
+    else:
+        # Re-run selection excluding current type using updated access needs
+        decision = select_best_challenge(
+            sess["p"], sess.get("access_needs", []), B=sess.get("B", DEFAULT_BREACH_COST),
+            exclude_type=current_type, filter_accessible=filter_accessible
+        )
+        chosen_c = decision["chosen_challenge"]
     new_type = chosen_c["type"]
     new_level = chosen_c["level"]
 

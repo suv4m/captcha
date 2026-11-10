@@ -19,7 +19,26 @@ Delivered as:
 
 ---
 
-## 2. Architecture
+## 2. How Users with Disabilities Reach the Right Challenge
+
+Accessibility is treated as a hard constraint without forcing users to disclose personal medical details upfront:
+
+1. **Direct In-Challenge Alternative Buttons (Zero-Declaration Flow):**
+   - Whenever any challenge renders, the first focusable element immediately following the prompt is the **"Use a different challenge"** row.
+   - It provides one-click / one-keypress alternative buttons (e.g., **Audio**, **Visual**, **Drag**, **Automatic**) to instantly swap to an alternative modal format without requiring prior disclosure.
+   - The backend `/api/challenge/switch` endpoint supports an optional `target_type` parameter, allowing the engine to calculate and present the optimal calibrated level for that specific type. Up to 2 swaps per session are supported.
+
+2. **Screen-Reader & Keyboard Traversal:**
+   - On challenge appearance or transition, focus is programmatically shifted to the challenge title/prompt (`tabindex="-1"`), and the status is announced to assistive tech via `aria-live` (e.g., *"Visual challenge. Press Tab for an audio alternative."*).
+   - A single `Tab` keypress lands directly on the alternative button row, enabling blind or keyboard-only users to immediately pivot to their preferred verification mode.
+
+3. **Optional Persistent Preferences ("Remember on this device"):**
+   - Users who choose to explicitly set access needs (Vision, Hearing, Motor, Cognitive) can opt into **"Remember on this device"**.
+   - This preference is strictly stored in client-side `localStorage` (`captcha_access_needs`) and is never sent to backend event logs or `/api/collect`.
+
+---
+
+## 3. Architecture
 
 ```
 captcha-aiml/

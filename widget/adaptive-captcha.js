@@ -356,6 +356,39 @@ TEMPLATE.innerHTML = `
   font-size: 16px;
   font-weight: bold;
 }
+
+.alt-nav-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 10px 0;
+  font-size: 12px;
+}
+
+.alt-label {
+  color: var(--cap-muted);
+  font-size: 11px;
+}
+
+.alt-btn {
+  background: none;
+  border: 1px solid var(--cap-border);
+  border-radius: var(--cap-radius);
+  color: var(--cap-accent);
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.alt-btn:hover, .alt-btn:focus-visible {
+  background: var(--cap-bg);
+  border-color: var(--cap-accent);
+  outline: 2px solid var(--cap-accent);
+}
 </style>
 
 <div class="captcha-container" role="region" aria-label="Human verification widget">
@@ -375,6 +408,9 @@ TEMPLATE.innerHTML = `
     <label class="a11y-label">
       <input type="checkbox" value="cognitive" class="a11y-cb"> Cognitive
     </label>
+    <label class="a11y-label" style="grid-column: 1 / -1; margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--cap-border);">
+      <input type="checkbox" id="rememberNeedsCb" class="remember-cb"> Remember on this device
+    </label>
   </div>
 
   <div class="captcha-row">
@@ -389,7 +425,11 @@ TEMPLATE.innerHTML = `
   </div>
 
   <div class="challenge-box" id="challengeBox">
-    <div class="challenge-title" id="challengePrompt">Solve challenge</div>
+    <div class="challenge-title" id="challengePrompt" tabindex="-1">Solve challenge</div>
+    <div class="alt-nav-row" id="altNavRow" role="group" aria-label="Use a different challenge">
+      <span class="alt-label">Use a different challenge:</span>
+      <span id="altButtons" style="display: inline-flex; gap: 4px;"></span>
+    </div>
     <div id="challengeContent"></div>
     <div class="btn-row">
       <button type="button" class="btn-secondary" id="switchBtn">Try a different challenge</button>
@@ -434,6 +474,8 @@ export class AdaptiveCaptcha extends HTMLElement {
     this.$a11yOptions = this.shadowRoot.getElementById("a11yOptions");
     this.$challengeBox = this.shadowRoot.getElementById("challengeBox");
     this.$challengePrompt = this.shadowRoot.getElementById("challengePrompt");
+    this.$altButtons = this.shadowRoot.getElementById("altButtons");
+    this.$rememberCb = this.shadowRoot.getElementById("rememberNeedsCb");
     this.$challengeContent = this.shadowRoot.getElementById("challengeContent");
     this.$switchBtn = this.shadowRoot.getElementById("switchBtn");
     this.$submitBtn = this.shadowRoot.getElementById("submitChallengeBtn");
@@ -462,7 +504,37 @@ export class AdaptiveCaptcha extends HTMLElement {
     this._bindEvents();
     this._startCollector();
     this._loadConfig();
+    this._initRememberedNeeds();
     this._updatePrivacyNotice();
+  }
+
+  _initRememberedNeeds() {
+    try {
+      const saved = localStorage.getItem("captcha_access_needs");
+      if (saved) {
+        const needs = JSON.parse(saved);
+        if (Array.isArray(needs)) {
+          if (this.$rememberCb) this.$rememberCb.checked = true;
+          const cbs = this.shadowRoot.querySelectorAll(".a11y-cb");
+          cbs.forEach(cb => {
+            if (needs.includes(cb.value)) cb.checked = true;
+          });
+        }
+      }
+    } catch (e) {
+      // localStorage disabled / denied
+    }
+  }
+
+  _handleRememberNeeds() {
+    try {
+      if (this.$rememberCb && this.$rememberCb.checked) {
+        const needs = this._getSelectedNeeds();
+        localStorage.setItem("captcha_access_needs", JSON.stringify(needs));
+      } else {
+        localStorage.removeItem("captcha_access_needs");
+      }
+    } catch (e) {}
   }
 
   async _loadConfig() {
@@ -554,11 +626,16 @@ export class AdaptiveCaptcha extends HTMLElement {
       cb.addEventListener("change", () => this._onNeedsChanged());
     });
 
+    if (this.$rememberCb) {
+      this.$rememberCb.addEventListener("change", () => this._handleRememberNeeds());
+    }
+
     this.$switchBtn.addEventListener("click", () => this._switchChallenge());
     this.$submitBtn.addEventListener("click", () => this._submitChallenge());
   }
 
   async _onNeedsChanged() {
+    this._handleRememberNeeds();
     const needs = this._getSelectedNeeds();
     if (this._session && this._activeChallenge && this._state === "challenge") {
       const seq = ++this._needsSeq;
@@ -702,6 +779,26 @@ export class AdaptiveCaptcha extends HTMLElement {
     this.$challengePrompt.textContent = challenge.prompt || "Solve the challenge";
     this.$challengeContent.innerHTML = "";
 
+    // Render alternative challenge buttons
+    const allAlts = [
+      { type: "audio", label: "Audio" },
+      { type: "visual", label: "Visual" },
+      { type: "drag", label: "Drag" },
+      { type: "automatic", label: "Automatic" }
+    ];
+    const availableAlts = allAlts.filter(a => a.type !== ctype && (a.type !== "automatic" || ctype !== "pow"));
+    if (this.$altButtons) {
+      this.$altButtons.innerHTML = "";
+      availableAlts.forEach(alt => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "alt-btn";
+        btn.textContent = alt.label;
+        btn.addEventListener("click", () => this._switchChallenge(alt.type));
+        this.$altButtons.appendChild(btn);
+      });
+    }
+
     if (ctype === "visual") {
       this._renderVisual(challenge);
     } else if (ctype === "audio") {
@@ -711,7 +808,18 @@ export class AdaptiveCaptcha extends HTMLElement {
     } else if (ctype === "pow") {
       this._renderPow(challenge);
     }
-    this._announce(`Challenge required: ${challenge.prompt || ctype}`);
+
+    // Move focus to heading and announce via aria-live
+    this.$challengePrompt.focus();
+
+    let altHint = "an audio alternative";
+    if (ctype === "audio") altHint = "a visual alternative";
+    else if (ctype === "visual") altHint = "an audio alternative";
+    else if (ctype === "drag") altHint = "an audio alternative";
+    else if (ctype === "pow") altHint = "an audio alternative";
+
+    const challengeName = ctype === "pow" ? "Automatic" : ctype.charAt(0).toUpperCase() + ctype.slice(1);
+    this._announce(`${challengeName} challenge. Press Tab for ${altHint}.`);
   }
 
   _renderVisual(challenge) {
@@ -939,15 +1047,18 @@ export class AdaptiveCaptcha extends HTMLElement {
     }
   }
 
-  async _switchChallenge() {
+  async _switchChallenge(targetType = null) {
     if (!this._session) return;
     this.$switchBtn.disabled = true;
 
     try {
+      const payload = { session_id: this._session.session_id };
+      if (targetType) payload.target_type = targetType;
+
       const res = await fetch(`${this.endpoint}/challenge/switch`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: this._session.session_id })
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();

@@ -42,6 +42,7 @@ class VerifyResponse(BaseModel):
 
 class SwitchRequest(BaseModel):
     session_id: str
+    target_type: Optional[str] = None
 
 
 class SessionNeedsRequest(BaseModel):

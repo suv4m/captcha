@@ -513,3 +513,22 @@ Result: PASS
 
 
 
+
+## Fix 4: Real-world access without declaring a disability
+
+### Gate: tests/test_fix4_gate.py
+```
+pytest -v tests/test_fix4_gate.py
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.2.0, pluggy-1.7.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\captcha
+plugins: anyio-4.12.1
+collecting ... collected 2 items
+
+tests/test_fix4_gate.py::test_switch_target_type_endpoint PASSED         [ 50%]
+tests/test_fix4_gate.py::test_keyboard_only_navigation_and_screen_reader_announcements PASSED [100%]
+
+======================= 2 passed, 2 warnings in 13.05s ========================
+Result: PASS
+```
