@@ -4,7 +4,7 @@
     "Sh": 0.12,
     "T": 45.0
   },
-  "default_breach_cost": 60.0,
+  "default_breach_cost": 2.0,
   "challenges": [
     {
       "id": "none",
@@ -19,6 +19,7 @@
       "id": "pow1",
       "type": "pow",
       "level": 1,
+      "invisible": true,
       "T": 0.2,
       "Sh": 0.99,
       "Sb": 0.85,
@@ -28,6 +29,7 @@
       "id": "pow2",
       "type": "pow",
       "level": 2,
+      "invisible": true,
       "T": 0.8,
       "Sh": 0.98,
       "Sb": 0.65,

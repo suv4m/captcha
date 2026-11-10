@@ -380,6 +380,7 @@ def demo_login(req: DemoLoginRequest):
 def get_lab_results():
     results_path = ARTIFACTS_DIR / "results.json"
     metrics_path = ARTIFACTS_DIR / "metrics.json"
+    sweep_path = ARTIFACTS_DIR / "b_sweep.json"
 
     if not results_path.exists() or not metrics_path.exists():
         raise HTTPException(status_code=404, detail="Lab artifacts not found. Run training/eval first.")
@@ -389,16 +390,22 @@ def get_lab_results():
     with open(metrics_path, "r", encoding="utf-8") as f:
         metrics = json.load(f)
 
+    b_sweep = None
+    if sweep_path.exists():
+        with open(sweep_path, "r", encoding="utf-8") as f:
+            b_sweep = json.load(f)
+
     return {
         "results": results,
-        "metrics": metrics
+        "metrics": metrics,
+        "b_sweep": b_sweep
     }
 
 
 @app.get("/api/lab/simulate")
 def lab_simulate(
     policy: str = Query("P3", pattern="^(P0|P1|P2|P3)$"),
-    breach_cost: float = Query(60.0, ge=20.0, le=200.0),
+    breach_cost: float = Query(2.0, ge=1.0, le=200.0),
     runs: int = Query(20, ge=1, le=50)
 ):
     from ml.evaluate import CHALLENGES, INCOMPAT_PENALTY, select_challenge, simulate_session

@@ -13,7 +13,7 @@ class SessionRequest(BaseModel):
     features: Dict[str, float]
     access_needs: List[str] = Field(default_factory=list)
     policy: Optional[str] = "P3"
-    breach_cost: Optional[float] = 60.0
+    breach_cost: Optional[float] = 2.0
 
 
 class SessionResponse(BaseModel):

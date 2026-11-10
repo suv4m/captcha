@@ -89,11 +89,11 @@ def simulate_session(is_bot: int, subgroup: str, access_needs: List[str],
         "passed": passed,
         "time_spent": time_spent,
         "is_violation": is_violation,
-        "is_free": (chosen_id == "none")
+        "is_free": (chosen_id == "none" or c.get("invisible", False))
     }
 
 
-def evaluate_all(n_runs: int = 20, breach_cost: float = 60.0):
+def evaluate_all(n_runs: int = 20, breach_cost: float = 2.0):
     print("[evaluate.py] Loading models and generating test population...")
     cal_full = joblib.load(ARTIFACTS_DIR / "risk_full.joblib")
     cal_min = joblib.load(ARTIFACTS_DIR / "risk_min.joblib")

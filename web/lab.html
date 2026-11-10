@@ -132,14 +132,20 @@
           </select>
         </div>
         <div style="display: flex; align-items: center; gap: 10px;">
-          <label for="labB">Breach Cost B: <strong id="labBVal">60</strong></label>
-          <input type="range" id="labB" min="20" max="200" value="60" step="5" class="slider-control" style="width: 180px;">
+          <label for="labB">Breach Cost B: <strong id="labBVal">2</strong></label>
+          <input type="range" id="labB" min="1" max="100" value="2" step="1" class="slider-control" style="width: 180px;">
         </div>
         <button type="button" id="reSimulateBtn" class="btn-primary" style="padding: 6px 14px;">Re-run Simulation</button>
       </div>
 
       <div id="simStatsRow" style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-family: var(--font-mono); font-size: 13px;">
         <!-- Filled dynamically -->
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border);">
+        <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">Pareto Trade-off: Security vs Mean Human Time (B Sweep)</h3>
+        <p class="desc" style="margin-bottom: 8px;">Knee of trade-off at B=2 balances human challenge-free pass rate with bot defense.</p>
+        <div id="paretoChartContainer" style="max-width: 500px;"></div>
       </div>
     </section>
 
@@ -227,6 +233,19 @@
           `;
           mbody.appendChild(r);
         });
+
+        // 2. Pareto chart (Security vs Mean Human Time)
+        if (data.b_sweep) {
+          renderLineChart(document.getElementById("paretoChartContainer"), {
+            data: data.b_sweep,
+            xKey: "mean_human_time",
+            yKey: "security",
+            title: "Pareto Frontier (B ∈ {2, 3, 5, 8, 12, 20, 40, 60})",
+            xLabel: "Mean Human Time (s)",
+            yLabel: "Security (1 - BotPass)",
+            minX: 0, maxX: 14, minY: 0.55, maxY: 0.90
+          });
+        }
 
         // 3. ROC Chart
         if (metrics.roc_curve_points) {

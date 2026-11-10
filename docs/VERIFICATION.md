@@ -414,6 +414,55 @@ tests/test_fix1_gate.py::test_gate_test_c_missing_or_unknown_names_return_422 PA
 Result: PASS
 ```
 
+---
+
+## Fix 2: degenerate policy at default breach cost
+
+### Sweep Table (`scripts/sweep_breach_cost.py`)
+```
+Command: python scripts/sweep_breach_cost.py
+Output:
+  B | MeanTime | HumanPass | Security | Free/Invis | Challenge Distribution (Humans)
+------------------------------------------------------------------------------------------
+  2 |     0.5s |     99.0% |    60.2% |      97.5% | none:40.3%, pow2:36.8%, pow1:20.3%, pow3:1.5%
+  3 |     0.9s |     98.3% |    64.9% |      94.7% | pow2:60.9%, none:17.2%, pow1:16.6%, pow3:3.1%
+  5 |     1.5s |     97.4% |    68.4% |      83.9% | pow2:75.1%, pow3:10.2%, pow1:6.5%, vis3:3.9%
+  8 |     2.8s |     96.3% |    70.7% |      63.5% | pow2:63.2%, pow3:20.5%, vis3:10.2%, drg2:5.8%
+ 12 |     4.7s |     94.8% |    74.3% |      37.2% | pow2:37.2%, pow3:29.9%, vis3:21.9%, drg2:10.8%
+ 20 |     7.9s |     92.0% |    80.6% |      10.8% | vis3:47.5%, pow3:25.2%, drg2:15.7%, pow2:10.8%
+ 40 |    11.2s |     89.0% |    84.9% |       0.1% | vis3:81.7%, drg2:8.5%, pow3:7.4%, aud3:2.1%
+ 60 |    12.0s |     88.1% |    85.0% |       0.0% | vis3:88.8%, drg2:4.9%, aud3:4.0%, pow3:1.9%
+```
+Knee selection: Chosen default `DEFAULT_BREACH_COST = 2.0`. At `B = 2.0`, 97.5% of humans receive friction-free (`none`, `pow1`, or `pow2`), with mean time 0.5s and 99.0% pass rate.
+
+### Failing Test Output (Pre-fix at B=60.0)
+```
+Command: pytest -v tests/test_fix2_gate.py
+Output:
+FAILED tests/test_fix2_gate.py::test_human_mix_not_more_than_50_percent_single_challenge - AssertionError: At DEFAULT_BREACH_COST=60.0, single-challenge 'vis3' has 98.9% share, exceeding 50% limit! Full shares: {'vis3': 0.9886666666666667, 'drg2': 0.011333333333333334}
+========================= 1 failed, 2 passed in 0.32s =========================
+```
+
+### Gate Passing Verification (Post-fix at B=2.0)
+```
+Command: pytest -v tests/test_fix2_gate.py
+Output:
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.2.0, pluggy-1.7.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\captcha
+plugins: anyio-4.12.1
+collecting ... collected 3 items
+
+tests/test_fix2_gate.py::test_human_mix_not_more_than_50_percent_single_challenge PASSED [ 33%]
+tests/test_fix2_gate.py::test_bots_with_high_risk_never_receive_none_or_pow1 PASSED [ 66%]
+tests/test_fix2_gate.py::test_catalog_pow_invisible_flag PASSED          [100%]
+
+============================== 3 passed in 0.44s ==============================
+Result: PASS
+```
+
+
 
 
 
