@@ -87,6 +87,10 @@ class Storage:
         with self._lock:
             return self._challenges.get(challenge_id)
 
+    def delete_challenge(self, challenge_id: str):
+        with self._lock:
+            self._challenges.pop(challenge_id, None)
+
     def mark_token_used(self, token: str) -> bool:
         """Returns True if token was unused and is now marked used. False if replayed."""
         with self._lock:

@@ -44,6 +44,18 @@ class SwitchRequest(BaseModel):
     session_id: str
 
 
+class SessionNeedsRequest(BaseModel):
+    session_id: str
+    access_needs: List[str]
+
+
+class SessionNeedsResponse(BaseModel):
+    session_id: str
+    challenge: Dict[str, Any]
+    access_needs: List[str]
+    allowed_ids: List[str]
+
+
 class SiteVerifyRequest(BaseModel):
     token: str
 

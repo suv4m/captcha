@@ -462,6 +462,50 @@ tests/test_fix2_gate.py::test_catalog_pow_invisible_flag PASSED          [100%]
 Result: PASS
 ```
 
+---
+
+## Fix 3: declared needs only applied at the start
+
+### Failing Test Output (Pre-fix)
+```
+Command: pytest -v tests/test_fix3_gate.py
+Output:
+FAILED tests/test_fix3_gate.py::test_session_needs_update_and_switch_compatibility - AssertionError: Expected 200 from /api/session/needs, got 404
+============================== 1 failed in 8.58s ==============================
+```
+
+### Gate Passing Verification (Post-fix)
+```
+Command: pytest -v tests/test_fix3_gate.py
+Output:
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.2.0, pluggy-1.7.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\captcha
+plugins: anyio-4.12.1
+collecting ... collected 1 item
+
+tests/test_fix3_gate.py::test_session_needs_update_and_switch_compatibility PASSED [100%]
+
+============================= 1 passed in 13.70s ==============================
+Result: PASS
+
+Command: pytest -v tests/test_fix3_playwright.py
+Output:
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.2.0, pluggy-1.7.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\captcha
+plugins: anyio-4.12.1
+collecting ... collected 1 item
+
+tests/test_fix3_playwright.py::test_fix3_playwright_gate PASSED          [100%]
+
+======================= 1 passed in 32.12s ========================
+Result: PASS
+```
+
+
 
 
 

@@ -61,3 +61,4 @@ def test_catalog_pow_invisible_flag():
     assert cmap["pow1"].get("invisible") is True
     assert cmap["pow2"].get("invisible") is True
     assert cmap["pow3"].get("invisible", False) is False
+

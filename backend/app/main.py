@@ -20,6 +20,7 @@ from backend.app.config import (
 from backend.app.schemas import (
     ConfigResponse, SessionRequest, SessionResponse,
     VerifyRequest, VerifyResponse, SwitchRequest,
+    SessionNeedsRequest, SessionNeedsResponse,
     SiteVerifyRequest, SiteVerifyResponse,
     DemoLoginRequest, DemoLoginResponse
 )
@@ -278,6 +279,54 @@ def verify_challenge(req: VerifyRequest):
     )
 
 
+@app.post("/api/session/needs", response_model=SessionNeedsResponse)
+def update_session_needs(req: SessionNeedsRequest):
+    sess = store.get_session(req.session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session not found or expired")
+
+    if sess.get("locked", False):
+        raise HTTPException(status_code=400, detail="Session is locked")
+
+    # Invalidate previous challenge
+    old_cid = sess.get("current_challenge_id")
+    if old_cid:
+        store.delete_challenge(old_cid)
+
+    # Update session access needs
+    sess["access_needs"] = req.access_needs
+
+    # Recompute best challenge with updated needs
+    p = sess["p"]
+    B = sess.get("B", DEFAULT_BREACH_COST)
+    filter_accessible = sess.get("policy") != "P1"
+    decision = select_best_challenge(p, req.access_needs, B=B, filter_accessible=filter_accessible)
+    chosen_c = decision["chosen_challenge"]
+
+    # Instantiate replacement challenge
+    pub, sec = _instantiate_challenge(chosen_c["type"], chosen_c["level"])
+    new_cid = pub["challenge_id"]
+
+    store.save_challenge(new_cid, {
+        "type": chosen_c["type"],
+        "level": chosen_c["level"],
+        "secret": sec,
+        "session_id": req.session_id
+    })
+
+    sess["current_challenge_id"] = new_cid
+    sess["challenge_type"] = chosen_c["type"]
+    sess["level"] = chosen_c["level"]
+    store.update_session(req.session_id, sess)
+
+    return SessionNeedsResponse(
+        session_id=req.session_id,
+        challenge=pub,
+        access_needs=req.access_needs,
+        allowed_ids=decision["allowed_ids"]
+    )
+
+
 @app.post("/api/challenge/switch")
 def switch_challenge(req: SwitchRequest):
     sess = store.get_session(req.session_id)
@@ -291,12 +340,17 @@ def switch_challenge(req: SwitchRequest):
     if swap_count >= 2:
         raise HTTPException(status_code=400, detail="Maximum 2 challenge swaps allowed per session")
 
+    # Invalidate old challenge secret
+    old_cid = sess.get("current_challenge_id")
+    if old_cid:
+        store.delete_challenge(old_cid)
+
     current_type = sess.get("challenge_type")
     filter_accessible = sess.get("policy") != "P1"
 
-    # Re-run selection excluding current type
+    # Re-run selection excluding current type using updated access needs
     decision = select_best_challenge(
-        sess["p"], sess.get("access_needs", []), B=sess.get("B", 60.0),
+        sess["p"], sess.get("access_needs", []), B=sess.get("B", DEFAULT_BREACH_COST),
         exclude_type=current_type, filter_accessible=filter_accessible
     )
 

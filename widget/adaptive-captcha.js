@@ -359,17 +359,6 @@ TEMPLATE.innerHTML = `
 </style>
 
 <div class="captcha-container" role="region" aria-label="Human verification widget">
-  <div class="captcha-row">
-    <button type="button" class="checkbox-btn" id="verifyBtn" aria-checked="false" role="checkbox">
-      <div class="checkbox-box" id="checkboxBox"></div>
-      <span id="checkboxLabel">Verify you are human</span>
-    </button>
-    <div class="badge">
-      <span>Adaptive CAPTCHA</span>
-      <span id="bandBadge">Accessible</span>
-    </div>
-  </div>
-
   <button type="button" class="a11y-toggle" id="a11yToggle" aria-expanded="false">
     Accessibility options
   </button>
@@ -386,6 +375,17 @@ TEMPLATE.innerHTML = `
     <label class="a11y-label">
       <input type="checkbox" value="cognitive" class="a11y-cb"> Cognitive
     </label>
+  </div>
+
+  <div class="captcha-row">
+    <button type="button" class="checkbox-btn" id="verifyBtn" aria-checked="false" role="checkbox">
+      <div class="checkbox-box" id="checkboxBox"></div>
+      <span id="checkboxLabel">Verify you are human</span>
+    </button>
+    <div class="badge">
+      <span>Adaptive CAPTCHA</span>
+      <span id="bandBadge">Accessible</span>
+    </div>
   </div>
 
   <div class="challenge-box" id="challengeBox">
@@ -417,6 +417,7 @@ export class AdaptiveCaptcha extends HTMLElement {
     this._session = null;
     this._activeChallenge = null;
     this._challengeStartTime = null;
+    this._needsSeq = 0;
 
     // Behavioral event buffer (in-memory ring buffer)
     this._events = [];
@@ -548,8 +549,37 @@ export class AdaptiveCaptcha extends HTMLElement {
       this.$a11yToggle.setAttribute("aria-expanded", String(!isHidden));
     });
 
+    const cbs = this.shadowRoot.querySelectorAll(".a11y-cb");
+    cbs.forEach(cb => {
+      cb.addEventListener("change", () => this._onNeedsChanged());
+    });
+
     this.$switchBtn.addEventListener("click", () => this._switchChallenge());
     this.$submitBtn.addEventListener("click", () => this._submitChallenge());
+  }
+
+  async _onNeedsChanged() {
+    const needs = this._getSelectedNeeds();
+    if (this._session && this._activeChallenge && this._state === "challenge") {
+      const seq = ++this._needsSeq;
+      try {
+        const res = await fetch(`${this.endpoint}/session/needs`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: this._session.session_id,
+            access_needs: needs
+          })
+        });
+        if (res.ok && seq === this._needsSeq) {
+          const data = await res.json();
+          this._showChallenge(data.challenge);
+          this._announce("Accessibility needs updated. New compatible challenge loaded.");
+        }
+      } catch (err) {
+        console.error("Failed to update needs dynamically:", err);
+      }
+    }
   }
 
   _announce(msg) {
@@ -655,6 +685,10 @@ export class AdaptiveCaptcha extends HTMLElement {
   }
 
   _showChallenge(challenge) {
+    if (this._powInterval) {
+      clearInterval(this._powInterval);
+      this._powInterval = null;
+    }
     this._state = "challenge";
     this._activeChallenge = challenge;
     this._challengeStartTime = Date.now();
