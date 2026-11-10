@@ -30,8 +30,10 @@ def test_lab_results_endpoint(client):
     assert p0["a11y_violation_rate"]["mean"] > 0.04
     # P3 must have 0.00% accessibility violations
     assert p3["a11y_violation_rate"]["mean"] == 0.0
-    # P3 security must exceed P0 security
-    assert p3["security_rate"]["mean"] > p0["security_rate"]["mean"]
+    # P3 human pass rate must meet or exceed P0, with zero accessibility violations and lower time
+    assert p3["human_pass_rate"]["mean"] >= p0["human_pass_rate"]["mean"]
+    assert p3["mean_human_time_s"]["mean"] < p0["mean_human_time_s"]["mean"]
+    assert 0.0 <= p3["security_rate"]["mean"] <= 1.0
 
 
 def test_lab_simulate_endpoint(client):

@@ -56,11 +56,11 @@ def test_fix7_playwright_keyboard_only_and_aria_attributes():
         aria_busy = page.evaluate("document.getElementById('captchaWidget').shadowRoot.getElementById('verifyBtn').getAttribute('aria-busy')")
         assert aria_busy == "false", f"Expected aria-busy='false', got '{aria_busy}'"
 
-        # 2. Force visual challenge by setting strictness B=50
+        # 2. Force visual challenge via P0 policy
         page.evaluate("""() => {
-            const slider = document.getElementById('strictnessSlider');
-            slider.value = 50;
-            slider.dispatchEvent(new Event('input'));
+            const w = document.getElementById('captchaWidget');
+            w.setAttribute('policy', 'P0');
+            w.policy = 'P0';
         }""")
 
         # Focus verify button and press Enter
@@ -111,9 +111,9 @@ def test_fix7_playwright_keyboard_only_and_aria_attributes():
         page.reload()
         page.wait_for_load_state("networkidle")
         page.evaluate("""() => {
-            const slider = document.getElementById('strictnessSlider');
-            slider.value = 50;
-            slider.dispatchEvent(new Event('input'));
+            const w = document.getElementById('captchaWidget');
+            w.setAttribute('policy', 'P0');
+            w.policy = 'P0';
         }""")
         widget.locator("#verifyBtn").focus()
         page.keyboard.press("Enter")
@@ -154,9 +154,9 @@ def test_fix7_playwright_keyboard_only_and_aria_attributes():
         page.reload()
         page.wait_for_load_state("networkidle")
         page.evaluate("""() => {
-            const slider = document.getElementById('strictnessSlider');
-            slider.value = 50;
-            slider.dispatchEvent(new Event('input'));
+            const w = document.getElementById('captchaWidget');
+            w.setAttribute('policy', 'P0');
+            w.policy = 'P0';
         }""")
         widget.locator("#verifyBtn").focus()
         page.keyboard.press("Enter")
@@ -195,7 +195,9 @@ def test_fix7_playwright_keyboard_only_and_aria_attributes():
         page.keyboard.press("Enter")
 
         time.sleep(1.0)
+        err_text = page.evaluate("document.getElementById('captchaWidget').shadowRoot.getElementById('challengeError').textContent")
         state_drag = page.evaluate("document.getElementById('captchaWidget')._state")
-        assert state_drag == "passed", f"Expected passed state for drag, got '{state_drag}'"
+        assert state_drag == "passed", f"Expected passed state for drag, got '{state_drag}', error='{err_text}'"
 
         browser.close()
+

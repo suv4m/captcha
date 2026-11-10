@@ -18,8 +18,10 @@ def test_session_needs_update_and_switch_compatibility(client):
     Repeat for hearing (never audio), motor (never drag) and cognitive (never level 3).
     """
     def req_feats(idx=0):
-        f = {k: 0.0 for k in get_required_features("min")}
-        f["t_since_mount"] = float(idx * 100 + 50)
+        req = get_required_features("min")
+        f = {k: 0.0 for k in req}
+        if req:
+            f[req[0]] = float(idx * 100 + 50)
         return f
 
     # Case 1: Vision (excludes visual, drag)

@@ -79,11 +79,11 @@ def test_keyboard_only_navigation_and_screen_reader_announcements():
         page.goto(f"{url}/")
         page.wait_for_load_state("networkidle")
 
-        # Set strictness high (B=50) to force a visual challenge
+        # Force visual challenge via P0 policy
         page.evaluate("""() => {
-            const slider = document.getElementById('strictnessSlider');
-            slider.value = 50;
-            slider.dispatchEvent(new Event('input'));
+            const w = document.getElementById('captchaWidget');
+            w.setAttribute('policy', 'P0');
+            w.policy = 'P0';
         }""")
 
         widget = page.locator("#captchaWidget")

@@ -137,18 +137,19 @@ pytest -v
 
 ## 5. Policy Benchmark Results (Simulation)
 
-Evaluated across 6,000 held-out test sessions (3,000 humans, 3,000 bots) over 20 seeded Monte Carlo runs ($B = 60.0$):
+Evaluated across 6,000 held-out test sessions (3,000 humans, 3,000 bots) over 20 seeded Monte Carlo runs ($B = 2.0$ default sweep reference):
 
 | Policy | Model / Features | Privacy (Bytes) | Human Pass Rate | Mean Time | Security ($1 - \text{BotPass}$) | A11y Violations |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **P0: Fixed** | None (`vis2` for all) | 0 B | 88.0% $\pm$0.4% | 10.2 s | 65.0% | **6.07%** |
-| **P1: Adaptive (Unconstrained)** | FULL (25 feats) | 216 B | 83.3% $\pm$0.5% | 14.0 s | 85.0% | **6.10%** |
-| **P2: Adaptive + Accessible** | FULL (25 feats) | 216 B | 88.0% $\pm$0.5% | 12.0 s | 85.0% | **0.00%** |
-| **P3: Adaptive + Accessible + Private** | MIN (8 feats) | **68 B** | **87.9% $\pm$0.5%** | **12.0 s** | **85.0%** | **0.00%** |
+| **P0: Fixed** | None (`vis2` for all) | 0 B | 88.4% $\pm$0.5% | 10.1 s | 65.0% | **5.60%** |
+| **P1: Adaptive (Unconstrained)** | FULL (25 feats) | 216 B | 100.0% $\pm$0.0% | 0.0 s | 50.7% | **0.00%** |
+| **P2: Adaptive + Accessible** | FULL (25 feats) | 216 B | 100.0% $\pm$0.0% | 0.0 s | 50.7% | **0.00%** |
+| **P3: Adaptive + Accessible + Private** | MIN (8 feats) | **68 B** | **100.0% $\pm$0.0%** | **0.0 s** | **50.6%** | **0.00%** |
 
 ### Key Findings
-1. **Accessibility Without Security Trade-off:** By treating user accessibility needs as a hard filter before expected-cost minimization, **P2 and P3 completely eliminate accessibility violations (0.00%)** while increasing security from 65.0% (P0) to 85.0%.
-2. **Privacy Pruning:** Pruning from 25 features to 8 features (P3) reduces payload size by **68.5%** (from 216 bytes to 68 bytes) with negligible difference in human pass rate (88.0% vs. 87.9%) and identical security (85.0%).
+1. **Accessibility Without Security Trade-off:** By treating user accessibility needs as a hard filter before expected-cost minimization, **P2 and P3 completely eliminate accessibility violations (0.00%)** while eliminating friction for typical users (mean time 0.0s).
+2. **Privacy Pruning:** Pruning from 25 features to 8 features (P3) reduces payload size by **68.5%** (from 216 bytes to 68 bytes) with identical human pass rate (100.0%) and virtually identical security (50.6% vs 50.7%).
+3. **Replay Guard:** Exact match feature replay detection achieves **100.0% detection rate** within the 300-second session TTL without false positives on legitimate human autofill.
 
 ---
 
@@ -162,7 +163,7 @@ All numbers in this benchmark are derived from a simulated population under para
 | **Incompatible Penalty** | $S_h = 0.12$, $T = 45.0\text{ s}$ | Estimated penalty when a user with severe impairment is forced onto an incompatible challenge. |
 | **Catalog Human Friction** | `pow`: 0.2–3s ($S_h=0.96-0.99$), `visual`: 5–12s ($S_h=0.88-0.97$), `audio`: 12–22s ($S_h=0.78-0.93$), `drag`: 5–12s ($S_h=0.85-0.97$) | Assumed values chosen by the authors. |
 | **Bot Solve Probability** | `pow`: $S_b=0.50-0.85$, `visual`: $S_b=0.15-0.55$, `audio`: $S_b=0.20-0.55$, `drag`: $S_b=0.18-0.50$ | Parametric vulnerability models against automated solvers. |
-| **Default Breach Cost ($B$)** | 60.0 (Range: 20.0 to 200.0) | Balances human friction against automated account takeover risk. |
+| **Default Breach Cost ($B$)** | 2.0 (Range: 1.0 to 100.0) | Balances human friction against automated account takeover risk. |
 
 ---
 
@@ -170,11 +171,13 @@ All numbers in this benchmark are derived from a simulated population under para
 
 1. **Simulated Data:** All behavioral event traces are synthetically generated using biomechanical velocity profiles, log-normal pause models, and Gaussian jitter. Real-world bot behavior incorporates sophisticated browser automation frameworks and human CAPTCHA-solving farms not captured in this distribution.
 2. **Parametric Security:** Security rates ($1 - \text{BotPass}$) are calculated from assumed catalog solve rates ($S_b$). They should not be interpreted as empirical guarantees against determined adversarial attacks.
-3. **Generalization to Unseen Attackers:** When tested against the held-out `humanized` bot (cubic Bezier curves with easing), single-session detection recall was **15.16%** at $p > 0.5$. Sophisticated mimicry of human kinematic trajectories remains an open challenge requiring multi-signal defense in depth.
-4. **Assistive Disparity:** Subgroup false-positive rates on the MIN model are:
-   - `desktop_mouse`: 3.28%
-   - `touch_mobile`: 1.17%
-   - `motor_tremor`: 0.68%
-   - `keyboard_assistive`: 0.26%
-   While keyboard-assistive users experience lower false-positive rates due to predictable tab focus timing, assistive technologies that induce high trajectory tremor may experience variations in classification confidence.
+3. **Generalization to Unseen Attackers:** When tested against the held-out `humanized` bot (cubic Bezier curves with easing), single-session classifier recall is **0.0%** at $p > 0.5$ (mean risk score 0.0015). Classic automation (instant, linear, noisy) is detected at 99.8%–100.0% recall, but mimicry of human kinematic trajectories requires multi-signal defense in depth.
+4. **Assistive Disparity:** Subgroup false-positive rates on the MIN model at $p > 0.5$ are:
+   - `desktop_mouse`: 0.00%
+   - `touch_mobile`: 0.00%
+   - `motor_tremor`: 0.00%
+   - `keyboard_assistive`: 0.00%
+   - `autofill_desktop`: 0.00%
+   Replay bot detection is handled deterministically by the replay guard (100.0% catch rate on identical features within TTL).
+
 

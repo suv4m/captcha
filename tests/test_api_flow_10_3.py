@@ -15,17 +15,17 @@ def client():
 
 def _get_dummy_features():
     import random
-    feats = {k: 0.0 for k in get_required_features("min")}
-    feats["t_since_mount"] = round(random.uniform(500, 5000), 1)
+    req = get_required_features("min")
+    feats = {k: 0.0 for k in req}
+    if req:
+        feats[req[0]] = round(random.uniform(500, 5000), 1)
     return feats
 
 
 def test_full_flow_all_four_types(client):
     """Run full session -> solve -> siteverify flow for each challenge type."""
-    # Dummy features that produce high risk (triggering challenges)
-    bot_features = _get_dummy_features()
-
     for ctype in ["visual", "audio", "drag", "pow"]:
+        bot_features = _get_dummy_features()
         # We enforce type by setting access_needs appropriately or selecting
         if ctype == "visual":
             needs = []
@@ -228,8 +228,13 @@ def test_audio_endpoint_headers(client):
         "access_needs": ["vision"],
         "breach_cost": 120.0
     })
+    sid = res.json()["session_id"]
     ch = res.json()["challenge"]
     cid = ch["challenge_id"]
+    if ch.get("type") != "audio":
+        sw = client.post("/api/challenge/switch", json={"session_id": sid, "target_type": "audio"})
+        ch = sw.json()["challenge"]
+        cid = ch["challenge_id"]
 
     audio_res = client.get(f"/api/challenge/{cid}/audio")
     assert audio_res.status_code == 200

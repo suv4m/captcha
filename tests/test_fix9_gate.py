@@ -86,3 +86,4 @@ def test_replay_guard_live_endpoint(client):
     })
     assert res2.status_code == 400, f"Expected 400 for replayed feature vector, got {res2.status_code}"
     assert "replay" in res2.json().get("detail", "").lower()
+

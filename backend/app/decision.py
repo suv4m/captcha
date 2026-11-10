@@ -68,7 +68,10 @@ def select_best_challenge(
         if exclude_type:
             allowed = [c for c in allowed if c["type"] != exclude_type]
 
-    candidates = [CHALLENGE_MAP["none"]] + allowed
+    if exclude_type:
+        candidates = [c for c in allowed if c["id"] != "none"]
+    else:
+        candidates = [CHALLENGE_MAP["none"]] + allowed
 
     scored = []
     for c in candidates:

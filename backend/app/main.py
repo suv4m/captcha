@@ -395,7 +395,7 @@ def update_session_needs(req: SessionNeedsRequest):
     p = sess["p"]
     B = sess.get("B", DEFAULT_BREACH_COST)
     filter_accessible = sess.get("policy") != "P1"
-    decision = select_best_challenge(p, req.access_needs, B=B, filter_accessible=filter_accessible)
+    decision = select_best_challenge(p, req.access_needs, B=B, exclude_type="none", filter_accessible=filter_accessible)
     chosen_c = decision["chosen_challenge"]
 
     # Instantiate replacement challenge

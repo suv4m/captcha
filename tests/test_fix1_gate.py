@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
+from backend.app.store import store
 from backend.app.risk import get_required_features
 from ml.extract import extract_features, FEATURE_NAMES
 
@@ -70,16 +71,18 @@ def test_gate_test_b_risk_parity_python_vs_js(client):
             py_dict_all = {name: val for name, val in zip(FEATURE_NAMES, py_feats)}
             py_payload = {name: py_dict_all[name] for name in config_names}
 
+            store._seen_features.clear()
             res_py = client.post("/api/session", json={
-                "site_key": "test_key",
+                "site_key": "test_site",
                 "features": py_payload,
                 "policy": policy
             })
             assert res_py.status_code == 200, res_py.text
             risk_py = res_py.json()["trace"]["p"]
 
+            store._seen_features.clear()
             res_js = client.post("/api/session", json={
-                "site_key": "test_key",
+                "site_key": "test_site",
                 "features": js_payload,
                 "policy": policy
             })
@@ -98,7 +101,7 @@ def test_gate_test_c_missing_or_unknown_names_return_422(client):
     # Missing a required key
     missing_payload = {k: 1.0 for k in config_names[:-1]}
     res = client.post("/api/session", json={
-        "site_key": "test_key",
+        "site_key": "test_site",
         "features": missing_payload,
         "policy": "P3"
     })
@@ -108,7 +111,7 @@ def test_gate_test_c_missing_or_unknown_names_return_422(client):
     unknown_payload = {k: 1.0 for k in config_names}
     unknown_payload["extra_unknown_feature"] = 1.0
     res2 = client.post("/api/session", json={
-        "site_key": "test_key",
+        "site_key": "test_site",
         "features": unknown_payload,
         "policy": "P3"
     })
@@ -117,7 +120,7 @@ def test_gate_test_c_missing_or_unknown_names_return_422(client):
     # List of floats instead of dict
     list_payload = [0.0] * 8
     res3 = client.post("/api/session", json={
-        "site_key": "test_key",
+        "site_key": "test_site",
         "features": list_payload,
         "policy": "P3"
     })

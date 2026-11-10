@@ -44,3 +44,4 @@ All behavioral models, feature distributions, and human/bot benchmarks are devel
 ## 6. Accessibility Compliance Status
 - The user interface **targets WCAG 2.1 AA**; colour contrast is checked across all light and dark tokens (`tests/contrast_check.py`), and full keyboard end-to-end traversal is validated via automated Playwright tests.
 - However, **no formal independent third-party accessibility audit** has been performed.
+

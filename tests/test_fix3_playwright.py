@@ -50,11 +50,11 @@ def test_fix3_playwright_gate():
             page.goto(f"{url}/")
             page.wait_for_load_state("networkidle")
 
-            # Force high breach cost B=50 so initial challenge is visual
+            # Force visual initial challenge via P0 policy
             page.evaluate("""() => {
-                const slider = document.getElementById('strictnessSlider');
-                slider.value = 50;
-                slider.dispatchEvent(new Event('input'));
+                const w = document.getElementById('captchaWidget');
+                w.setAttribute('policy', 'P0');
+                w.policy = 'P0';
             }""")
 
             widget = page.locator("#captchaWidget")
@@ -73,8 +73,9 @@ def test_fix3_playwright_gate():
             with page.expect_response(lambda r: "/api/session/needs" in r.url and r.status == 200):
                 cb.check()
 
-            # Check new challenge
-            time.sleep(0.3)
+            # Stop worker from auto-solving before switch can be verified
+            page.evaluate("document.getElementById('captchaWidget')._stopPowWorker()")
+
             ctype = page.evaluate("document.getElementById('captchaWidget')._activeChallenge.type")
             lvl = page.evaluate("document.getElementById('captchaWidget')._activeChallenge.level")
             assert check_fn(ctype, lvl), f"Need '{need}' got incompatible replacement: type={ctype}, level={lvl}"
@@ -84,7 +85,8 @@ def test_fix3_playwright_gate():
             with page.expect_response(lambda r: "/api/challenge/switch" in r.url and r.status == 200):
                 switch_btn.click()
 
-            time.sleep(0.3)
+            page.evaluate("document.getElementById('captchaWidget')._stopPowWorker()")
+
             ctype_sw = page.evaluate("document.getElementById('captchaWidget')._activeChallenge.type")
             lvl_sw = page.evaluate("document.getElementById('captchaWidget')._activeChallenge.level")
             assert check_fn(ctype_sw, lvl_sw), f"Need '{need}' after switch got incompatible: type={ctype_sw}, level={lvl_sw}"

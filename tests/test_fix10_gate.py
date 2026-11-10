@@ -52,3 +52,4 @@ def test_grep_disallowed_phrases_returns_zero_matches():
 def test_formula_explanation_in_readme():
     readme = (BASE_DIR / "README.md").read_text(encoding="utf-8")
     assert "missed-pass friction penalty in equivalent seconds of user frustration, chosen arbitrarily by the authors" in readme
+

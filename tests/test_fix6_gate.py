@@ -18,13 +18,21 @@ def client():
     return TestClient(app)
 
 
+def _make_feats(val):
+    req = get_required_features("min")
+    feats = {k: 0.0 for k in req}
+    if req:
+        feats[req[0]] = float(val)
+    return feats
+
+
 def test_challenge_reuse_after_success_rejected_409(client):
     """
     Gate Fix 6:
     On success: delete the challenge, set session.solved = true, issue exactly one token.
     A later verify returns 409.
     """
-    feats = {k: 0.0 for k in get_required_features("min")}
+    feats = _make_feats(10.0)
     res = client.post("/api/session", json={
         "site_key": "test_site",
         "features": feats,
@@ -68,7 +76,7 @@ def test_preswap_challenge_id_rejected_400(client):
     A pre-swap challenge id is rejected with 400.
     Accept only session.current_challenge_id.
     """
-    feats = {k: 0.0 for k in get_required_features("min")}
+    feats = _make_feats(20.0)
     res = client.post("/api/session", json={
         "site_key": "test_site",
         "features": feats,
@@ -104,7 +112,7 @@ def test_session_yields_at_most_one_token(client):
     Gate Fix 6:
     A session yields at most one token. Subsequent verification, swapping or needs update cannot mint another.
     """
-    feats = {k: 0.0 for k in get_required_features("min")}
+    feats = _make_feats(30.0)
     res = client.post("/api/session", json={
         "site_key": "test_site",
         "features": feats,
@@ -136,3 +144,4 @@ def test_session_yields_at_most_one_token(client):
     # Needs update after solve fails
     nd = client.post("/api/session/needs", json={"session_id": sid, "access_needs": ["vision"]})
     assert nd.status_code == 400
+

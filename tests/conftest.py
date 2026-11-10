@@ -7,3 +7,4 @@ try:
     config.CAPTCHA_TEST_MODE = True
 except ImportError:
     pass
+
