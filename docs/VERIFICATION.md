@@ -375,7 +375,7 @@ Result: PASS (Gate G5)
 ```
 
 ### Adversarial Review (Section 10.6)
-1. **Visual Token Audit**: WCAG AA compliance verified; dark mode button text uses high-contrast text (`#111113` on `#3CB8A2` accent: 8.16:1 contrast ratio).
+1. **Visual Token Audit**: Targets WCAG 2.1 AA; colour contrast checked; keyboard end-to-end tested; no formal audit; dark mode button text uses high-contrast text (`#111113` on `#3CB8A2` accent: 8.16:1 contrast ratio).
 2. **Viewport Scalability**: Mobile layout verified at 375px with no horizontal overflow.
 3. **Attack Invariant**: Linear and instant bots are consistently flagged as HIGH risk and routed to strong challenges or locked.
 4. **Test Hook Security**: Verified hook returns 404 when `CAPTCHA_TEST_MODE=0`.
@@ -652,4 +652,43 @@ Result: PASS
 4. **`autofill_desktop` Human Subgroup**:
    - False-positive rate (FPR at threshold 0.50): 0.0000.
    - Sample size: 605, mean score min: 0.0008, mean score full: 0.0007.
+
+## Fix 10: README and docs honesty
+
+### Gate: tests/test_fix10_gate.py
+```
+pytest -v tests/test_fix10_gate.py
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.2.0, pluggy-1.7.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\captcha
+plugins: anyio-4.12.1
+collecting ... collected 3 items
+
+tests/test_fix10_gate.py::test_limitations_md_exists_and_covers_five_topics PASSED [ 33%]
+tests/test_fix10_gate.py::test_grep_disallowed_phrases_returns_zero_matches PASSED [ 66%]
+tests/test_fix10_gate.py::test_formula_explanation_in_readme PASSED      [100%]
+
+============================== 3 passed in 0.08s ==============================
+Result: PASS
+```
+
+### Disallowed Phrase Grep Verification:
+```powershell
+Get-ChildItem -Path README.md, docs\*.md | Select-String -Pattern 'WHO estimates', 'cognitive latency distributions', 'WCAG AA compliant'
+# Output: 0 matches returned
+```
+
+### Docs Created and Updated:
+1. `docs/LIMITATIONS.md`: Created documenting:
+   - Synthetic data only, no real user study.
+   - Replay bots defeat behavioral classifier alone; replay guard relies on exact match within TTL.
+   - Audio and visual solvers can be beaten by off-the-shelf multimodal models.
+   - Proof of work burns client battery and does not stop large botnets with cheap compute.
+   - The accessibility switcher relies on honest self-declaration.
+2. `README.md` & `docs/`:
+   - Replaced "modeled after WHO estimates" and "modeled from cognitive latency distributions" with "assumed values chosen by the authors".
+   - Replaced "WCAG AA compliant" with "targets WCAG 2.1 AA; colour contrast checked; keyboard end-to-end tested; no formal audit".
+   - Rendered formula as $J(c) = (1 - p) \cdot [T(c)/10 + 3 \cdot (1 - S_h(c))] + p \cdot B \cdot S_b(c)$ with explicit explanation of constant 3 as "a missed-pass friction penalty in equivalent seconds of user frustration, chosen arbitrarily by the authors".
+
 

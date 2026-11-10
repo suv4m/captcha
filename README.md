@@ -10,7 +10,7 @@ Conventional CAPTCHAs deliver uniform, high-friction challenges that disproporti
 - **Accessibility as a Hard Constraint:** Challenges are selected per session based on declared assistive needs. Accessibility is never traded for security ($C(A)$ is never empty).
 - **Privacy by Construction:** Raw coordinates, keystroke strings, and device fingerprints never leave the browser. The live client extracts and sends only 8 numerical timing features (~68 bytes).
 - **AIML Risk Estimation:** A probability-calibrated Random Forest model evaluates session automation risk $p \in [0, 1]$.
-- **Expected-Cost Decision Engine:** Dynamically selects the optimal challenge $c^*$ minimizing $J(c) = (1-p) \cdot \text{Cost}_{\text{human}} + p \cdot B \cdot \text{Risk}_{\text{bot}}$.
+- **Expected-Cost Decision Engine:** Dynamically selects the optimal challenge $c^*$ minimizing $J(c) = (1 - p) \cdot [T(c)/10 + 3 \cdot (1 - S_h(c))] + p \cdot B \cdot S_b(c)$, where the constant 3 is a missed-pass friction penalty in equivalent seconds of user frustration, chosen arbitrarily by the authors.
 
 Delivered as:
 - **SDK:** Embeddable vanilla Web Component `<adaptive-captcha>` (Shadow DOM, framework-agnostic).
@@ -70,7 +70,7 @@ captcha-aiml/
   web/
     index.html         # Interactive demo sign-in form & decision trace
     lab.html           # Empirical benchmark dashboard & live simulator
-    styles.css         # WCAG AA design system tokens
+    styles.css         # Design system tokens targeting WCAG 2.1 AA
     chart.js           # Zero-dependency inline SVG charting engine
   scripts/
     make_digit_clips.py # SAPI / WAV synthesis generator
@@ -126,7 +126,7 @@ node --test tests/test_parity.js
 # Lab & Simulation Endpoints (Gate G4)
 pytest -v tests/test_lab_endpoints.py
 
-# End-to-End Scenarios & WCAG Contrast (Gate G5)
+# End-to-End Scenarios & Contrast Verification (Gate G5)
 pytest -v tests/test_e2e_scenarios_10_5.py tests/contrast_check.py
 
 # Full test suite in one command
@@ -158,9 +158,9 @@ All numbers in this benchmark are derived from a simulated population under para
 
 | Parameter Category | Assumed Value / Distribution | Rational & Reference |
 | :--- | :--- | :--- |
-| **Disability Prevalence** | Vision 6%, Hearing 4%, Motor 6%, Cognitive 4% | Modeled after WHO global population disability estimates. |
+| **Disability Prevalence** | Vision 6%, Hearing 4%, Motor 6%, Cognitive 4% | Assumed values chosen by the authors. |
 | **Incompatible Penalty** | $S_h = 0.12$, $T = 45.0\text{ s}$ | Estimated penalty when a user with severe impairment is forced onto an incompatible challenge. |
-| **Catalog Human Friction** | `pow`: 0.2–3s ($S_h=0.96-0.99$), `visual`: 5–12s ($S_h=0.88-0.97$), `audio`: 12–22s ($S_h=0.78-0.93$), `drag`: 5–12s ($S_h=0.85-0.97$) | Modeled from cognitive latency and task completion distributions. |
+| **Catalog Human Friction** | `pow`: 0.2–3s ($S_h=0.96-0.99$), `visual`: 5–12s ($S_h=0.88-0.97$), `audio`: 12–22s ($S_h=0.78-0.93$), `drag`: 5–12s ($S_h=0.85-0.97$) | Assumed values chosen by the authors. |
 | **Bot Solve Probability** | `pow`: $S_b=0.50-0.85$, `visual`: $S_b=0.15-0.55$, `audio`: $S_b=0.20-0.55$, `drag`: $S_b=0.18-0.50$ | Parametric vulnerability models against automated solvers. |
 | **Default Breach Cost ($B$)** | 60.0 (Range: 20.0 to 200.0) | Balances human friction against automated account takeover risk. |
 
