@@ -619,3 +619,37 @@ tests/test_fix8_gate.py::test_run_py_fails_loudly_on_training_error PASSED [100%
 ============================== 5 passed in 7.11s ==============================
 Result: PASS
 ```
+
+## Fix 9: Training labels and replay bots
+
+### Gate: tests/test_fix9_gate.py
+```
+pytest -v tests/test_fix9_gate.py
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.2.0, pluggy-1.7.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\captcha
+plugins: anyio-4.12.1
+collecting ... collected 2 items
+
+tests/test_fix9_gate.py::test_metrics_json_reports_fix9_fields PASSED    [ 50%]
+tests/test_fix9_gate.py::test_replay_guard_live_endpoint PASSED          [100%]
+
+============================== 2 passed in 4.52s ==============================
+Result: PASS
+```
+
+### Metrics Reported in `metrics.json`:
+1. **Disjoint Seeds**:
+   - `train`: 101, `val`: 202, `test`: 303 (all disjoint).
+2. **AUC With and Without Replay**:
+   - `full_with_replay`: 0.8411, `full_without_replay`: 0.9260
+   - `min_with_replay`: 0.8696, `min_without_replay`: 0.9614
+3. **Replay Guard**:
+   - In-memory hash check in session store rejecting identical feature vectors within 300s TTL.
+   - Live endpoint test: duplicate features return HTTP 400 Bad Request.
+   - Evaluated detection rate on duplicated vectors: 1.0 (100.0%).
+4. **`autofill_desktop` Human Subgroup**:
+   - False-positive rate (FPR at threshold 0.50): 0.0000.
+   - Sample size: 605, mean score min: 0.0008, mean score full: 0.0007.
+

@@ -59,24 +59,24 @@
   "min": {
     "count": 8,
     "names": [
-      "p_dir_changes_per_100px",
       "t_first_interaction",
-      "p_speed_std",
-      "p_speed_mean",
-      "p_path_len",
-      "p_acc_std",
-      "t_idle_ratio",
-      "k_gap_mean"
+      "d_pointer_none",
+      "d_pointer_touch",
+      "t_events_total",
+      "d_pointer_mouse",
+      "t_focus_changes",
+      "t_scrolls",
+      "t_idle_ratio"
     ],
     "indices": [
-      7,
       17,
-      4,
-      3,
-      1,
-      6,
-      18,
-      13
+      24,
+      23,
+      21,
+      22,
+      20,
+      19,
+      18
     ]
   }
 }

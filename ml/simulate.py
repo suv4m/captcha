@@ -3,8 +3,8 @@ import random
 import numpy as np
 from typing import Dict, Any, List, Tuple, Optional
 
-HUMAN_SUBGROUPS = ["desktop_mouse", "touch_mobile", "keyboard_assistive", "motor_tremor"]
-TRAIN_BOT_TYPES = ["instant", "linear", "noisy", "replay"]
+HUMAN_SUBGROUPS = ["desktop_mouse", "touch_mobile", "keyboard_assistive", "motor_tremor", "autofill_desktop"]
+TRAIN_BOT_TYPES = ["instant", "linear", "noisy"]
 ALL_BOT_TYPES = ["instant", "linear", "noisy", "replay", "humanized"]
 
 
@@ -153,6 +153,32 @@ def generate_human_trace(rng: random.Random, subgroup: str) -> Dict[str, Any]:
                 events.append([round(current_t, 1), 3, 0.0, 0.0])
             else:
                 events.append([round(current_t, 1), 2, 0.0, 0.0])
+
+    elif subgroup == "autofill_desktop":
+        pointer_type = "mouse"
+        # Fast, short mouse gesture (e.g. user clicks login/autofill without manual typing)
+        current_t = rng.uniform(150.0, 350.0)
+        cx, cy = rng.uniform(100.0, 300.0), rng.uniform(100.0, 300.0)
+        target_x = rng.uniform(200.0, 500.0)
+        target_y = rng.uniform(200.0, 500.0)
+        steps = rng.randint(12, 22)
+
+        for step in range(steps):
+            t_ratio = (step + 1) / steps
+            s = 10.0 * (t_ratio ** 3) - 15.0 * (t_ratio ** 4) + 6.0 * (t_ratio ** 5)
+            curr_x = (1 - s) * cx + s * target_x + rng.gauss(0.0, 0.6)
+            curr_y = (1 - s) * cy + s * target_y + rng.gauss(0.0, 0.6)
+            current_t += max(3.0, rng.gauss(9.0, 2.0))
+            events.append([round(current_t, 1), 0, round(curr_x, 1), round(curr_y, 1)])
+
+        # Single click
+        current_t += rng.uniform(20.0, 50.0)
+        events.append([round(current_t, 1), 1, round(target_x, 1), round(target_y, 1)])
+
+        # Zero or one key events
+        if rng.random() < 0.5:
+            current_t += rng.uniform(25.0, 80.0)
+            events.append([round(current_t, 1), 2, 0.0, 0.0])
 
     else:
         raise ValueError(f"Unknown human subgroup: {subgroup}")

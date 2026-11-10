@@ -280,6 +280,26 @@ def train_all():
     if roc_points[-1]["fpr"] < 1.0:
         roc_points.append({"fpr": 1.0, "tpr": 1.0})
 
+    # AUC with and without replay
+    no_replay_mask = [i for i, m in enumerate(meta_test) if m.get("subgroup") != "replay"]
+    y_test_no_replay = y_test[no_replay_mask]
+    auc_full_no_replay = float(roc_auc_score(y_test_no_replay, test_probs_full[no_replay_mask]))
+    auc_min_no_replay = float(roc_auc_score(y_test_no_replay, test_probs_min[no_replay_mask]))
+    print(f"  Test FULL without replay: AUC={auc_full_no_replay:.4f}")
+    print(f"  Test MIN  without replay: AUC={auc_min_no_replay:.4f}")
+
+    # Replay guard detection rate test
+    from backend.app.store import Storage
+    test_store = Storage()
+    detected_count = 0
+    sample_vectors = X_test[:100]
+    for row in sample_vectors:
+        feat_dict = {FEATURE_NAMES[idx]: float(val) for idx, val in enumerate(row)}
+        test_store.check_replay(feat_dict)  # First presentation
+        if test_store.check_replay(feat_dict):  # Duplicate presentation
+            detected_count += 1
+    replay_guard_detection_rate = detected_count / len(sample_vectors)
+
     # Save metrics.json
     metrics = {
         "_disclaimer": "Simulated population with assumed parameters. Not real-world bot resistance.",
@@ -297,6 +317,8 @@ def train_all():
         "full_model": {
             "feature_count": 25,
             "roc_auc": round(auc_full, 4),
+            "roc_auc_with_replay": round(auc_full, 4),
+            "roc_auc_without_replay": round(auc_full_no_replay, 4),
             "pr_auc": round(pr_auc_full, 4),
             "tpr_at_1pct_fpr": round(tpr_at_1fpr_full, 4),
             "brier_score": round(brier_full, 4),
@@ -306,14 +328,27 @@ def train_all():
             "feature_count": 8,
             "selected_features": min_feature_names,
             "roc_auc": round(auc_min, 4),
+            "roc_auc_with_replay": round(auc_min, 4),
+            "roc_auc_without_replay": round(auc_min_no_replay, 4),
             "pr_auc": round(pr_auc_min, 4),
             "tpr_at_1pct_fpr": round(tpr_at_1fpr_min, 4),
             "brier_score": round(brier_min, 4),
             "ece": round(ece_min, 4),
         },
+        "auc_with_and_without_replay": {
+            "full_with_replay": round(auc_full, 4),
+            "full_without_replay": round(auc_full_no_replay, 4),
+            "min_with_replay": round(auc_min, 4),
+            "min_without_replay": round(auc_min_no_replay, 4),
+        },
+        "replay_guard": {
+            "detection_rate_on_duplicates": round(replay_guard_detection_rate, 4),
+            "ttl_seconds": 300
+        },
         "label_shuffle_test_auc": round(shuffle_auc, 4),
         "recall_by_bot_type": recall_by_bot_type,
         "false_positive_rate_by_human_subgroup": fpr_by_human_subgroup,
+        "autofill_desktop": fpr_by_human_subgroup.get("autofill_desktop", {}),
         "auc_vs_feature_count": auc_vs_k,
         "roc_curve_points": roc_points
     }

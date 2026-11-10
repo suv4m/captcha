@@ -17,7 +17,33 @@ class Storage:
         self._sessions: Dict[str, Dict[str, Any]] = {}
         self._challenges: Dict[str, Dict[str, Any]] = {}
         self._used_tokens: Set[str] = set()
+        self._seen_features: Dict[str, float] = {}
         self._init_sqlite()
+
+    def check_replay(self, features: Dict[str, Any]) -> bool:
+        """
+        Replay guard per Fix 9:
+        Returns True if feature vector is a duplicate seen within session TTL (replay attack).
+        Returns False if fresh.
+        """
+        if not features:
+            return False
+        import hashlib
+        import json
+        items = sorted([(k, round(float(v), 5)) for k, v in features.items()])
+        h = hashlib.sha256(json.dumps(items).encode("utf-8")).hexdigest()
+
+        now = time.time()
+        with self._lock:
+            expired = [k for k, ts in self._seen_features.items() if now - ts > SESSION_TTL_SECONDS]
+            for k in expired:
+                del self._seen_features[k]
+
+            if h in self._seen_features:
+                return True
+
+            self._seen_features[h] = now
+            return False
 
     def _init_sqlite(self):
         DATA_DIR.mkdir(parents=True, exist_ok=True)

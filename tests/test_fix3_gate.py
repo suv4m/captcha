@@ -17,13 +17,16 @@ def test_session_needs_update_and_switch_compatibility(client):
     Switch afterwards and the result is still compatible.
     Repeat for hearing (never audio), motor (never drag) and cognitive (never level 3).
     """
-    req_feats = {k: 0.0 for k in get_required_features("min")}
+    def req_feats(idx=0):
+        f = {k: 0.0 for k in get_required_features("min")}
+        f["t_since_mount"] = float(idx * 100 + 50)
+        return f
 
     # Case 1: Vision (excludes visual, drag)
     # Start session with no needs and high B so visual is chosen
     res = client.post("/api/session", json={
         "site_key": "test_site",
-        "features": req_feats,
+        "features": req_feats(1),
         "access_needs": [],
         "breach_cost": 50.0
     })
@@ -61,7 +64,7 @@ def test_session_needs_update_and_switch_compatibility(client):
     # Case 2: Hearing (never audio)
     res_h = client.post("/api/session", json={
         "site_key": "test_site",
-        "features": req_feats,
+        "features": req_feats(2),
         "access_needs": [],
         "breach_cost": 50.0
     })
@@ -81,7 +84,7 @@ def test_session_needs_update_and_switch_compatibility(client):
     # Case 3: Motor (never drag)
     res_m = client.post("/api/session", json={
         "site_key": "test_site",
-        "features": req_feats,
+        "features": req_feats(3),
         "access_needs": [],
         "breach_cost": 50.0
     })
@@ -101,7 +104,7 @@ def test_session_needs_update_and_switch_compatibility(client):
     # Case 4: Cognitive (never level 3)
     res_c = client.post("/api/session", json={
         "site_key": "test_site",
-        "features": req_feats,
+        "features": req_feats(4),
         "access_needs": [],
         "breach_cost": 50.0
     })

@@ -154,6 +154,12 @@ def create_session(req: SessionRequest):
 
     mode = "full" if req.policy in ["P1", "P2"] else "min"
 
+    # Replay guard check per Fix 9
+    if store.check_replay(req.features):
+        store.log_event(band="high", challenge_type="none", level=0, outcome="fail_replay_rejected",
+                        duration_ms=0, swap_count=0)
+        raise HTTPException(status_code=400, detail="Replay attack detected: duplicate feature vector within TTL.")
+
     # 1. Score risk
     p = score_session_risk(req.features, mode=mode)
     B = float(req.breach_cost if req.breach_cost is not None else DEFAULT_BREACH_COST)

@@ -3,45 +3,49 @@
     "name": "P0: Fixed (vis2)",
     "bytes_collected": 0,
     "human_pass_rate": {
-      "mean": 0.8797,
-      "std": 0.0041
+      "mean": 0.8844,
+      "std": 0.0052
     },
     "mean_human_time_s": {
-      "mean": 10.24,
+      "mean": 10.07,
       "std": 0.0
     },
     "bot_pass_rate": {
-      "mean": 0.3505,
-      "std": 0.0086
+      "mean": 0.3502,
+      "std": 0.0083
     },
     "security_rate": {
-      "mean": 0.6495,
-      "std": 0.0086
+      "mean": 0.6498,
+      "std": 0.0083
     },
     "challenge_free_rate": {
       "mean": 0.0,
       "std": 0.0
     },
     "a11y_violation_rate": {
-      "mean": 0.0607,
+      "mean": 0.056,
       "std": 0.0
     },
     "human_block_rate_by_subgroup": {
       "desktop_mouse": {
-        "mean": 0.1264,
-        "std": 0.0076
+        "mean": 0.1279,
+        "std": 0.0118
       },
       "touch_mobile": {
-        "mean": 0.1119,
-        "std": 0.0077
+        "mean": 0.1279,
+        "std": 0.0104
       },
       "keyboard_assistive": {
-        "mean": 0.1114,
-        "std": 0.0093
+        "mean": 0.1004,
+        "std": 0.0094
       },
       "motor_tremor": {
-        "mean": 0.1324,
-        "std": 0.0095
+        "mean": 0.1072,
+        "std": 0.0139
+      },
+      "autofill_desktop": {
+        "mean": 0.1144,
+        "std": 0.0115
       }
     }
   },
@@ -49,45 +53,49 @@
     "name": "P1: Adaptive (Full, unconstrained)",
     "bytes_collected": 216,
     "human_pass_rate": {
-      "mean": 0.8331,
-      "std": 0.0052
-    },
-    "mean_human_time_s": {
-      "mean": 13.98,
+      "mean": 1.0,
       "std": 0.0
     },
-    "bot_pass_rate": {
-      "mean": 0.1501,
-      "std": 0.0056
-    },
-    "security_rate": {
-      "mean": 0.8499,
-      "std": 0.0056
-    },
-    "challenge_free_rate": {
+    "mean_human_time_s": {
       "mean": 0.0,
       "std": 0.0
     },
+    "bot_pass_rate": {
+      "mean": 0.4933,
+      "std": 0.0051
+    },
+    "security_rate": {
+      "mean": 0.5067,
+      "std": 0.0051
+    },
+    "challenge_free_rate": {
+      "mean": 1.0,
+      "std": 0.0
+    },
     "a11y_violation_rate": {
-      "mean": 0.061,
+      "mean": 0.0,
       "std": 0.0
     },
     "human_block_rate_by_subgroup": {
       "desktop_mouse": {
-        "mean": 0.1739,
-        "std": 0.012
+        "mean": 0.0,
+        "std": 0.0
       },
       "touch_mobile": {
-        "mean": 0.1563,
-        "std": 0.0088
+        "mean": 0.0,
+        "std": 0.0
       },
       "keyboard_assistive": {
-        "mean": 0.1584,
-        "std": 0.0103
+        "mean": 0.0,
+        "std": 0.0
       },
       "motor_tremor": {
-        "mean": 0.18,
-        "std": 0.0107
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "autofill_desktop": {
+        "mean": 0.0,
+        "std": 0.0
       }
     }
   },
@@ -95,23 +103,23 @@
     "name": "P2: Adaptive + Accessible (Full)",
     "bytes_collected": 216,
     "human_pass_rate": {
-      "mean": 0.8797,
-      "std": 0.005
+      "mean": 1.0,
+      "std": 0.0
     },
     "mean_human_time_s": {
-      "mean": 12.02,
+      "mean": 0.0,
       "std": 0.0
     },
     "bot_pass_rate": {
-      "mean": 0.1501,
-      "std": 0.0056
+      "mean": 0.4933,
+      "std": 0.0051
     },
     "security_rate": {
-      "mean": 0.8499,
-      "std": 0.0056
+      "mean": 0.5067,
+      "std": 0.0051
     },
     "challenge_free_rate": {
-      "mean": 0.0,
+      "mean": 1.0,
       "std": 0.0
     },
     "a11y_violation_rate": {
@@ -120,20 +128,24 @@
     },
     "human_block_rate_by_subgroup": {
       "desktop_mouse": {
-        "mean": 0.1163,
-        "std": 0.0134
+        "mean": 0.0,
+        "std": 0.0
       },
       "touch_mobile": {
-        "mean": 0.1173,
-        "std": 0.009
+        "mean": 0.0,
+        "std": 0.0
       },
       "keyboard_assistive": {
-        "mean": 0.1227,
-        "std": 0.0099
+        "mean": 0.0,
+        "std": 0.0
       },
       "motor_tremor": {
-        "mean": 0.125,
-        "std": 0.0109
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "autofill_desktop": {
+        "mean": 0.0,
+        "std": 0.0
       }
     }
   },
@@ -141,23 +153,23 @@
     "name": "P3: Adaptive + Accessible + Private (Min)",
     "bytes_collected": 68,
     "human_pass_rate": {
-      "mean": 0.8793,
-      "std": 0.0048
+      "mean": 1.0,
+      "std": 0.0
     },
     "mean_human_time_s": {
-      "mean": 12.03,
+      "mean": 0.0,
       "std": 0.0
     },
     "bot_pass_rate": {
-      "mean": 0.1501,
-      "std": 0.0056
+      "mean": 0.4936,
+      "std": 0.0051
     },
     "security_rate": {
-      "mean": 0.8499,
-      "std": 0.0056
+      "mean": 0.5064,
+      "std": 0.0051
     },
     "challenge_free_rate": {
-      "mean": 0.0,
+      "mean": 1.0,
       "std": 0.0
     },
     "a11y_violation_rate": {
@@ -166,20 +178,24 @@
     },
     "human_block_rate_by_subgroup": {
       "desktop_mouse": {
-        "mean": 0.1164,
-        "std": 0.0124
+        "mean": 0.0,
+        "std": 0.0
       },
       "touch_mobile": {
-        "mean": 0.1178,
-        "std": 0.009
+        "mean": 0.0,
+        "std": 0.0
       },
       "keyboard_assistive": {
-        "mean": 0.1229,
-        "std": 0.0102
+        "mean": 0.0,
+        "std": 0.0
       },
       "motor_tremor": {
-        "mean": 0.1258,
-        "std": 0.0111
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "autofill_desktop": {
+        "mean": 0.0,
+        "std": 0.0
       }
     }
   }

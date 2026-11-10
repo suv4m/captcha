@@ -14,7 +14,10 @@ def client():
 
 
 def _get_dummy_features():
-    return {k: 0.0 for k in get_required_features("min")}
+    import random
+    feats = {k: 0.0 for k in get_required_features("min")}
+    feats["t_since_mount"] = round(random.uniform(500, 5000), 1)
+    return feats
 
 
 def test_full_flow_all_four_types(client):
