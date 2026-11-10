@@ -5,12 +5,10 @@ import random
 from typing import Dict, Any, Tuple
 from PIL import Image, ImageDraw, ImageFilter
 
-
 def _generate_textured_bg(w: int, h: int, rng: random.Random) -> Image.Image:
     img = Image.new("RGB", (w, h))
     draw = ImageDraw.Draw(img)
 
-    # Base gradient
     c1 = (rng.randint(40, 100), rng.randint(60, 120), rng.randint(80, 140))
     c2 = (rng.randint(120, 190), rng.randint(100, 170), rng.randint(60, 130))
 
@@ -21,7 +19,6 @@ def _generate_textured_bg(w: int, h: int, rng: random.Random) -> Image.Image:
         b = int(c1[2] * (1 - ratio) + c2[2] * ratio)
         draw.line([(0, y), (w, y)], fill=(r, g, b))
 
-    # Add geometric shapes / texture
     for _ in range(12):
         x1 = rng.randint(0, w)
         y1 = rng.randint(0, h)
@@ -36,7 +33,6 @@ def _generate_textured_bg(w: int, h: int, rng: random.Random) -> Image.Image:
 
     return img
 
-
 def create(level: int = 1, rng: random.Random = None) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     if rng is None:
         rng = random.Random()
@@ -46,26 +42,21 @@ def create(level: int = 1, rng: random.Random = None) -> Tuple[Dict[str, Any], D
 
     bg = _generate_textured_bg(bg_w, bg_h, rng)
 
-    # Position for target puzzle hole
     hole_x = rng.randint(70, bg_w - piece_size - 20)
     hole_y = rng.randint(20, bg_h - piece_size - 20)
 
-    # Crop piece from intact background before cutting hole
     piece = bg.crop((hole_x, hole_y, hole_x + piece_size, hole_y + piece_size))
 
-    # Add shadow/border to piece
     piece_draw = ImageDraw.Draw(piece)
     piece_draw.rectangle([0, 0, piece_size - 1, piece_size - 1], outline=(255, 255, 255), width=2)
 
-    # Render hole in background
     bg_draw = ImageDraw.Draw(bg)
-    # Darkened hole
+
     bg_draw.rectangle(
         [hole_x, hole_y, hole_x + piece_size, hole_y + piece_size],
         fill=(30, 30, 35), outline=(20, 20, 20), width=2
     )
 
-    # Level 3 decoy holes
     if level >= 3:
         decoy_x = rng.randint(20, 100)
         if abs(decoy_x - hole_x) > 60:
@@ -77,7 +68,6 @@ def create(level: int = 1, rng: random.Random = None) -> Tuple[Dict[str, Any], D
     tolerance_map = {1: 9, 2: 6, 3: 4}
     tolerance = tolerance_map.get(level, 6)
 
-    # Convert to base64
     bg_buf = io.BytesIO()
     bg.save(bg_buf, format="PNG")
     bg_b64 = f"data:image/png;base64,{base64.b64encode(bg_buf.getvalue()).decode('utf-8')}"
@@ -102,7 +92,6 @@ def create(level: int = 1, rng: random.Random = None) -> Tuple[Dict[str, Any], D
         "tolerance": tolerance
     }
     return public, secret
-
 
 def verify(secret: Dict[str, Any], answer: Any, interaction: Dict[str, Any] = None) -> bool:
     try:

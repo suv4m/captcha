@@ -91,7 +91,7 @@
       <strong>Research Disclaimer:</strong> Simulated population with assumed parameters. Security metrics represent synthetic attacker resistance under parametric models, not empirical web telemetry.
     </div>
 
-    <!-- Section 1: Four-Policy Comparison -->
+    
     <section class="card" style="margin-bottom: 24px;">
       <h2>1. Policy Benchmark (Held-out Test Population, 20 Runs)</h2>
       <p class="desc">Evaluating how accessibility constraints and privacy minimization affect security vs. human effort trade-offs.</p>
@@ -116,7 +116,7 @@
       </div>
     </section>
 
-    <!-- Section 2: Live Strictness Simulator -->
+    
     <section class="card" style="margin-bottom: 24px;">
       <h2>2. Interactive Policy Simulation</h2>
       <p class="desc">Adjust breach cost (B) to recompute policy outcomes live across the 6,000 held-out test sessions using vectorized evaluation.</p>
@@ -139,7 +139,7 @@
       </div>
 
       <div id="simStatsRow" style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-family: var(--font-mono); font-size: 13px;">
-        <!-- Filled dynamically -->
+        
       </div>
 
       <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border);">
@@ -150,7 +150,7 @@
     </section>
 
     <div class="grid-2">
-      <!-- Section 3: Model Comparison & ROC -->
+      
       <section class="card">
         <h2>3. Classifier Comparison & ROC</h2>
         <p class="desc">Comparing baseline ML architectures on identical validation splits.</p>
@@ -169,7 +169,7 @@
         <div id="rocChart" style="margin-top: 20px;"></div>
       </section>
 
-      <!-- Section 4 & 5: Subgroup Disparity & Feature Scaling -->
+      
       <section class="card">
         <h2>4. Fairness by Subgroup (FPR)</h2>
         <p class="desc">False-positive rate (humans incorrectly challenged or blocked) by accessibility subgroup.</p>
@@ -181,7 +181,7 @@
       </section>
     </div>
 
-    <!-- Section 6: Recall by Bot Type -->
+    
     <section class="card" style="margin-top: 24px;">
       <h2>6. Attacker Detection & Generalization to Unseen Threats</h2>
       <p class="desc">Detection rate by bot archetype. Note: <strong>humanized</strong> is strictly held out from training to simulate zero-day bot variants.</p>

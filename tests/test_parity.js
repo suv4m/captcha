@@ -30,7 +30,7 @@ test("Feature Parity: JS extractFeatures vs Python extract_features", (t) => {
       const jsVal = jsFeatures[i];
 
       const diff = Math.abs(pyVal - jsVal);
-      // Tolerance for floating point differences across engines
+
       const tol = 1e-3;
 
       assert.ok(

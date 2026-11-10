@@ -30,7 +30,6 @@ FEATURE_NAMES = [
     "d_pointer_none",
 ]
 
-
 def extract_features(trace: Dict[str, Any]) -> List[float]:
     """
     Extract 25 features from raw trace according to SPEC.md Section 5.1.
@@ -46,14 +45,6 @@ def extract_features(trace: Dict[str, Any]) -> List[float]:
 
     events = trace.get("events", [])
     t_events_total = float(len(events))
-
-    # Event codes:
-    # 0: pointermove
-    # 1: pointerdown
-    # 2: keydown
-    # 3: Backspace keydown
-    # 4: scroll
-    # 5: focusin
 
     pointer_moves = []
     pointer_clicks_t = []
@@ -82,13 +73,11 @@ def extract_features(trace: Dict[str, Any]) -> List[float]:
         elif code == 5:
             t_focus_changes += 1.0
 
-    # Keep last 500 pointermoves per spec
     if len(pointer_moves) > 500:
         pointer_moves = pointer_moves[-500:]
 
     p_n_moves = float(len(pointer_moves))
 
-    # Pointer motion features (2-10)
     if p_n_moves < 2:
         p_path_len = 0.0
         p_straightness = 0.0
@@ -103,7 +92,7 @@ def extract_features(trace: Dict[str, Any]) -> List[float]:
         dists = []
         dts_ms = []
         speeds = []
-        headings = []  # (angle_rad, dist) for segments with dist >= 4px
+        headings = []
 
         total_path = 0.0
         pauses = 0.0
@@ -116,13 +105,13 @@ def extract_features(trace: Dict[str, Any]) -> List[float]:
             dy = y_curr - y_prev
             dist = math.hypot(dx, dy)
             dt_raw = t_curr - t_prev
-            dt_eff = max(dt_raw, 1.0)  # dt in ms, max(dt, 1ms)
+            dt_eff = max(dt_raw, 1.0)
 
             dists.append(dist)
             dts_ms.append(dt_raw)
             total_path += dist
 
-            speed = (dist / dt_eff) * 1000.0  # px/s
+            speed = (dist / dt_eff) * 1000.0
             speeds.append(speed)
 
             if dt_raw > 150.0:
@@ -140,7 +129,6 @@ def extract_features(trace: Dict[str, Any]) -> List[float]:
         p_speed_std = float(np.std(speeds, ddof=0))
         p_speed_max = float(np.max(speeds))
 
-        # Accelerations: a_i = (speed_i - speed_{i-1}) / dt_i(s)
         if len(speeds) >= 2:
             accs = []
             for i in range(1, len(speeds)):
@@ -150,11 +138,10 @@ def extract_features(trace: Dict[str, Any]) -> List[float]:
         else:
             p_acc_std = 0.0
 
-        # Heading changes > 30 deg between segments >= 4 px per 100 px path
         dir_changes = 0.0
         for i in range(1, len(headings)):
             diff = abs(headings[i] - headings[i - 1])
-            # Normalize diff to [0, pi]
+
             while diff > math.pi:
                 diff = abs(diff - 2.0 * math.pi)
             if diff > (30.0 * math.pi / 180.0):
@@ -164,7 +151,6 @@ def extract_features(trace: Dict[str, Any]) -> List[float]:
         p_pauses = pauses
         p_dt_std = float(np.std(dts_ms, ddof=0))
 
-    # Clicks
     p_clicks = float(len(pointer_clicks_t))
     if p_clicks >= 3:
         click_gaps = [pointer_clicks_t[i] - pointer_clicks_t[i - 1] for i in range(1, len(pointer_clicks_t))]
@@ -172,7 +158,6 @@ def extract_features(trace: Dict[str, Any]) -> List[float]:
     else:
         p_click_gap_std = 0.0
 
-    # Keys
     k_n = float(len(keys_t))
     if k_n >= 2:
         key_gaps = [keys_t[i] - keys_t[i - 1] for i in range(1, len(keys_t))]
@@ -182,14 +167,12 @@ def extract_features(trace: Dict[str, Any]) -> List[float]:
         k_gap_mean = 0.0
         k_gap_std = 0.0
 
-    # Timing
     t_since_mount = verify_t
     if len(events) > 0:
         t_first_interaction = float(events[0][0])
     else:
         t_first_interaction = verify_t
 
-    # Idle ratio
     if len(events) >= 2:
         t_first = float(events[0][0])
         t_last = float(events[-1][0])
@@ -209,7 +192,6 @@ def extract_features(trace: Dict[str, Any]) -> List[float]:
     else:
         t_idle_ratio = 0.0
 
-    # Device flags
     d_pointer_mouse = 1.0 if pointer_type == "mouse" else 0.0
     d_pointer_touch = 1.0 if pointer_type == "touch" else 0.0
     d_pointer_none = 1.0 if pointer_type == "none" else 0.0

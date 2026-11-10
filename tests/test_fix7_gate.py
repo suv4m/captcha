@@ -15,10 +15,8 @@ from backend.app.main import app
 
 PORT = 8007
 
-
 def _start_server():
     uvicorn.run(app, host="127.0.0.1", port=PORT, log_level="warning")
-
 
 def test_fix7_playwright_keyboard_only_and_aria_attributes():
     """
@@ -49,21 +47,18 @@ def test_fix7_playwright_keyboard_only_and_aria_attributes():
 
         widget = page.locator("#captchaWidget")
 
-        # 1. Verify verifyBtn attributes (plain button with aria-busy, not role="checkbox")
         role_attr = page.evaluate("document.getElementById('captchaWidget').shadowRoot.getElementById('verifyBtn').getAttribute('role')")
         assert role_attr is None or role_attr != "checkbox", f"Expected verifyBtn to not have role='checkbox', got '{role_attr}'"
 
         aria_busy = page.evaluate("document.getElementById('captchaWidget').shadowRoot.getElementById('verifyBtn').getAttribute('aria-busy')")
         assert aria_busy == "false", f"Expected aria-busy='false', got '{aria_busy}'"
 
-        # 2. Force visual challenge via P0 policy
         page.evaluate("""() => {
             const w = document.getElementById('captchaWidget');
             w.setAttribute('policy', 'P0');
             w.policy = 'P0';
         }""")
 
-        # Focus verify button and press Enter
         verify_btn = widget.locator("#verifyBtn")
         verify_btn.focus()
         page.keyboard.press("Enter")
@@ -71,7 +66,6 @@ def test_fix7_playwright_keyboard_only_and_aria_attributes():
         challenge_box = widget.locator("#challengeBox")
         challenge_box.wait_for(state="visible", timeout=10000)
 
-        # 3. Check Visual ARIA attributes: group role & aria-pressed on tiles
         grid_role = page.evaluate("document.getElementById('captchaWidget').shadowRoot.querySelector('.grid-container').getAttribute('role')")
         assert grid_role == "group", f"Expected grid role='group', got '{grid_role}'"
 
@@ -81,15 +75,12 @@ def test_fix7_playwright_keyboard_only_and_aria_attributes():
         tile0_pressed = page.evaluate("document.getElementById('captchaWidget').shadowRoot.querySelector('.grid-tile').getAttribute('aria-pressed')")
         assert tile0_pressed == "false", f"Expected tile aria-pressed='false', got '{tile0_pressed}'"
 
-        # Solve Visual challenge keyboard-only:
         cid_vis = page.evaluate("document.getElementById('captchaWidget')._activeChallenge.challenge_id")
         sec_vis = page.request.get(f"{url}/api/_test/secret/{cid_vis}").json()
         target_indices = sec_vis["answer"]
 
-        # Wait to satisfy server 400ms solve time rule
         time.sleep(0.5)
 
-        # Tab to first tile, toggle targets
         tiles = page.locator("#captchaWidget >> .grid-tile")
         tiles_count = tiles.count()
         for idx in range(tiles_count):
@@ -107,7 +98,6 @@ def test_fix7_playwright_keyboard_only_and_aria_attributes():
         state = page.evaluate("document.getElementById('captchaWidget')._state")
         assert state == "passed", f"Expected passed state for visual, got '{state}'"
 
-        # --- Test Audio keyboard-only completion ---
         page.reload()
         page.wait_for_load_state("networkidle")
         page.evaluate("""() => {
@@ -119,13 +109,12 @@ def test_fix7_playwright_keyboard_only_and_aria_attributes():
         page.keyboard.press("Enter")
         challenge_box.wait_for(state="visible", timeout=10000)
 
-        # Tab from heading to Audio alt button and press Enter
         page.keyboard.press("Tab")
         with page.expect_response(lambda r: "/api/challenge/switch" in r.url and r.status == 200):
             page.keyboard.press("Enter")
 
         time.sleep(0.5)
-        # Check Audio ARIA attributes
+
         audio_inp = widget.locator("#audioAnswerInput")
         audio_inp_label = page.evaluate("document.getElementById('captchaWidget').shadowRoot.getElementById('audioAnswerInput').getAttribute('aria-label')")
         assert audio_inp_label is not None and len(audio_inp_label) > 0, "Audio input must have aria-label"
@@ -150,7 +139,6 @@ def test_fix7_playwright_keyboard_only_and_aria_attributes():
         state_aud = page.evaluate("document.getElementById('captchaWidget')._state")
         assert state_aud == "passed", f"Expected passed state for audio, got '{state_aud}'"
 
-        # --- Test Drag keyboard-only completion ---
         page.reload()
         page.wait_for_load_state("networkidle")
         page.evaluate("""() => {
@@ -162,7 +150,6 @@ def test_fix7_playwright_keyboard_only_and_aria_attributes():
         page.keyboard.press("Enter")
         challenge_box.wait_for(state="visible", timeout=10000)
 
-        # Tab to Drag alt button (second alt button: Audio is first, Drag is second)
         drag_btn = page.evaluate("""() => {
             const btns = Array.from(document.getElementById('captchaWidget').shadowRoot.querySelectorAll('.alt-btn'));
             const d = btns.find(b => b.textContent.includes('Drag'));
@@ -174,7 +161,7 @@ def test_fix7_playwright_keyboard_only_and_aria_attributes():
             page.keyboard.press("Enter")
 
         time.sleep(0.5)
-        # Check Drag slider ARIA attributes
+
         slider_role = page.evaluate("document.getElementById('captchaWidget').shadowRoot.querySelector('.drag-slider-track').getAttribute('role')")
         assert slider_role == "slider", f"Expected slider role='slider', got '{slider_role}'"
 
@@ -182,7 +169,6 @@ def test_fix7_playwright_keyboard_only_and_aria_attributes():
         sec_drag = page.request.get(f"{url}/api/_test/secret/{cid_drag}").json()
         target_x = sec_drag["answer"]["x"]
 
-        # Set slider value via keyboard arrow keys or direct input simulation
         time.sleep(0.5)
         page.evaluate(f"""() => {{
             const sl = document.getElementById('captchaWidget').shadowRoot.querySelector('.drag-slider-track');

@@ -9,7 +9,7 @@ from backend.app.config import ARTIFACTS_DIR, CATALOG_PATH
 from ml.evaluate import CHALLENGES, INCOMPAT_PENALTY, select_challenge, simulate_session
 
 def run_sweep():
-    # Load test scores
+
     npz_path = ARTIFACTS_DIR / "test_scores.npz"
     if not npz_path.exists():
         print(f"Error: {npz_path} does not exist.")
@@ -27,7 +27,6 @@ def run_sweep():
     n_humans = len(human_indices)
     n_bots = len(bot_indices)
 
-    # Decode needs
     needs_list = []
     for i in range(N):
         n_arr = [needs_keys[j] for j in range(4) if needs_mat[i, j] == 1]
@@ -40,19 +39,17 @@ def run_sweep():
     sweep_results = []
 
     for B in B_values:
-        # P3: MIN model, filter accessible
+
         chosen_ids = []
         for i in range(N):
             cid = select_challenge(float(p_min[i]), needs_list[i], B=float(B), filter_accessible=True)
             chosen_ids.append(cid)
 
-        # Human metrics
         human_cids = [chosen_ids[idx] for idx in human_indices]
         human_times = []
         human_passes = []
         human_free_count = 0
 
-        # Distribution count
         cid_counts = {}
         for cid in human_cids:
             cid_counts[cid] = cid_counts.get(cid, 0) + 1
@@ -60,7 +57,6 @@ def run_sweep():
             if cid == "none" or c.get("invisible", False):
                 human_free_count += 1
 
-        # Simulate 20 seeds to get accurate pass/time
         rng = np.random.RandomState(42)
         total_time = 0.0
         total_pass = 0
@@ -77,7 +73,6 @@ def run_sweep():
         pass_rate = total_pass / (n_humans * n_trials)
         free_ratio = human_free_count / n_humans
 
-        # Bot security (1 - bot pass rate)
         bot_passes = 0
         for r in range(n_trials):
             for idx in bot_indices:
@@ -87,7 +82,6 @@ def run_sweep():
         bot_pass_rate = bot_passes / (n_bots * n_trials)
         security = 1.0 - bot_pass_rate
 
-        # Dist string
         dist_str = ", ".join([f"{k}:{v/n_humans*100:.1f}%" for k, v in sorted(cid_counts.items(), key=lambda x: -x[1])[:4]])
 
         print(f"{B:>3} | {mean_time:>7.1f}s | {pass_rate*100:>8.1f}% | {security*100:>7.1f}% | {free_ratio*100:>9.1f}% | {dist_str}")

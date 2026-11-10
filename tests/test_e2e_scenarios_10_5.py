@@ -6,15 +6,13 @@ from backend.app.main import app
 from backend.app.decision import select_best_challenge
 from backend.app.risk import get_required_features
 
-
 @pytest.fixture
 def client():
     return TestClient(app)
 
-
 def test_test_hook_security_404_when_disabled():
     """Assert test hook GET /api/_test/secret/{id} returns 404 without CAPTCHA_TEST_MODE=1."""
-    # Ensure disabled
+
     os.environ["CAPTCHA_TEST_MODE"] = "0"
     from backend.app import config
     config.CAPTCHA_TEST_MODE = False
@@ -23,10 +21,8 @@ def test_test_hook_security_404_when_disabled():
     res = c.get("/api/_test/secret/some_id")
     assert res.status_code == 404, "Test hook must return 404 when test mode is disabled!"
 
-    # Restore
     config.CAPTCHA_TEST_MODE = True
     os.environ["CAPTCHA_TEST_MODE"] = "1"
-
 
 def test_accessibility_constraint_30_sessions():
     """
@@ -35,7 +31,6 @@ def test_accessibility_constraint_30_sessions():
     """
     p_values = [0.05, 0.1, 0.2, 0.35, 0.55, 0.75, 0.95]
 
-    # Part 1: Vision declared (30 sessions)
     for i in range(30):
         p = p_values[i % len(p_values)]
         B = 60.0 + (i * 4)
@@ -45,28 +40,26 @@ def test_accessibility_constraint_30_sessions():
             f"Accessibility violation: 'vision' declared but received {chosen_type} (id: {dec['chosen_id']})"
         )
 
-    # Part 2: Vision and Hearing declared
     for i in range(15):
-        p = 0.55 + (i * 0.03)  # high risk p > 0.5
+        p = 0.55 + (i * 0.03)
         B = 60.0
         dec = select_best_challenge(p, ["vision", "hearing"], B=B)
         chosen_type = dec["chosen_type"]
         assert chosen_type == "pow", (
             f"Expected only PoW for vision+hearing, got {chosen_type}"
         )
-        # Verify step-up note appears when p > 0.5 and chosen Sb > 0.45 (PoW has Sb >= 0.50)
-        assert dec["step_up_suggested"] is True, "Step-up suggested note must appear at high risk with weak accessible set!"
 
+        assert dec["step_up_suggested"] is True, "Step-up suggested note must appear at high risk with weak accessible set!"
 
 def test_keyboard_assistive_flow(client):
     """A keyboard-assistive run completes a challenge using only keyboard events."""
-    # Keyboard assistive trace with dictionary features
+
     keyboard_features = {k: 0.0 for k in get_required_features("min")}
 
     res = client.post("/api/session", json={
         "site_key": "test_keyboard",
         "features": keyboard_features,
-        "access_needs": ["motor"],  # excludes drag
+        "access_needs": ["motor"],
         "breach_cost": 60.0
     })
     assert res.status_code == 200
@@ -76,12 +69,11 @@ def test_keyboard_assistive_flow(client):
     if sess["action"] == "challenge":
         ch = sess["challenge"]
         cid = ch["challenge_id"]
-        # Fetch secret from test hook
+
         sec_res = client.get(f"/api/_test/secret/{cid}")
         assert sec_res.status_code == 200
         answer = sec_res.json()["answer"]
 
-        # Verify solve
         import time
         time.sleep(0.42)
         v_res = client.post("/api/challenge/verify", json={
@@ -94,7 +86,6 @@ def test_keyboard_assistive_flow(client):
         assert v_res.json()["ok"] is True
         token = v_res.json()["token"]
 
-        # Siteverify
         sv = client.post("/api/siteverify", json={"token": token})
         assert sv.status_code == 200
         assert sv.json()["success"] is True

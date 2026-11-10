@@ -116,7 +116,6 @@ main {
   margin-bottom: 20px;
 }
 
-/* Sign-in Form */
 .form-group {
   margin-bottom: 16px;
 }
@@ -184,7 +183,6 @@ main {
   border: 1px solid var(--danger);
 }
 
-/* Decision Trace Panel */
 .trace-panel {
   font-family: var(--font-mono);
   font-size: 12px;

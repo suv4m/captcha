@@ -15,10 +15,8 @@ from backend.app.main import app
 
 PORT = 8003
 
-
 def _start_server():
     uvicorn.run(app, host="127.0.0.1", port=PORT, log_level="warning")
-
 
 def test_fix3_playwright_gate():
     """
@@ -50,7 +48,6 @@ def test_fix3_playwright_gate():
             page.goto(f"{url}/")
             page.wait_for_load_state("networkidle")
 
-            # Force visual initial challenge via P0 policy
             page.evaluate("""() => {
                 const w = document.getElementById('captchaWidget');
                 w.setAttribute('policy', 'P0');
@@ -64,23 +61,19 @@ def test_fix3_playwright_gate():
             challenge_box = widget.locator("#challengeBox")
             challenge_box.wait_for(state="visible", timeout=10000)
 
-            # Open accessibility options
             a11y_toggle = widget.locator("#a11yToggle")
             a11y_toggle.click()
 
-            # Tick the target need
             cb = widget.locator(f".a11y-cb[value='{need}']")
             with page.expect_response(lambda r: "/api/session/needs" in r.url and r.status == 200):
                 cb.check()
 
-            # Stop worker from auto-solving before switch can be verified
             page.evaluate("document.getElementById('captchaWidget')._stopPowWorker()")
 
             ctype = page.evaluate("document.getElementById('captchaWidget')._activeChallenge.type")
             lvl = page.evaluate("document.getElementById('captchaWidget')._activeChallenge.level")
             assert check_fn(ctype, lvl), f"Need '{need}' got incompatible replacement: type={ctype}, level={lvl}"
 
-            # Switch afterwards
             switch_btn = widget.locator("#switchBtn")
             with page.expect_response(lambda r: "/api/challenge/switch" in r.url and r.status == 200):
                 switch_btn.click()

@@ -12,11 +12,9 @@ os.environ["CAPTCHA_TEST_MODE"] = "1"
 from backend.app.main import app
 from backend.app.risk import get_required_features
 
-
 @pytest.fixture
 def client():
     return TestClient(app)
-
 
 def _make_feats(val):
     req = get_required_features("min")
@@ -24,7 +22,6 @@ def _make_feats(val):
     if req:
         feats[req[0]] = float(val)
     return feats
-
 
 def test_challenge_reuse_after_success_rejected_409(client):
     """
@@ -43,11 +40,9 @@ def test_challenge_reuse_after_success_rejected_409(client):
     sid = res.json()["session_id"]
     cid = res.json()["challenge"]["challenge_id"]
 
-    # Fetch answer
     sec = client.get(f"/api/_test/secret/{cid}").json()
     answer = sec["answer"]
 
-    # Solve successfully
     time.sleep(0.42)
     v1 = client.post("/api/challenge/verify", json={
         "session_id": sid,
@@ -60,7 +55,6 @@ def test_challenge_reuse_after_success_rejected_409(client):
     token1 = v1.json()["token"]
     assert token1 is not None
 
-    # Re-verify attempt with same challenge_id MUST return 409 Conflict
     v2 = client.post("/api/challenge/verify", json={
         "session_id": sid,
         "challenge_id": cid,
@@ -68,7 +62,6 @@ def test_challenge_reuse_after_success_rejected_409(client):
         "interaction": {}
     })
     assert v2.status_code == 409, f"Expected 409 for re-verify after success, got {v2.status_code}"
-
 
 def test_preswap_challenge_id_rejected_400(client):
     """
@@ -86,17 +79,14 @@ def test_preswap_challenge_id_rejected_400(client):
     sid = res.json()["session_id"]
     cid_orig = res.json()["challenge"]["challenge_id"]
 
-    # Fetch secret of original challenge before swap
     sec_orig = client.get(f"/api/_test/secret/{cid_orig}").json()
     answer_orig = sec_orig["answer"]
 
-    # Swap challenge
     sw = client.post("/api/challenge/switch", json={"session_id": sid})
     assert sw.status_code == 200
     cid_swapped = sw.json()["challenge"]["challenge_id"]
     assert cid_swapped != cid_orig
 
-    # Attempt to verify with pre-swap challenge id cid_orig
     time.sleep(0.42)
     v = client.post("/api/challenge/verify", json={
         "session_id": sid,
@@ -105,7 +95,6 @@ def test_preswap_challenge_id_rejected_400(client):
         "interaction": {}
     })
     assert v.status_code == 400, f"Expected 400 for pre-swap challenge id, got {v.status_code}"
-
 
 def test_session_yields_at_most_one_token(client):
     """
@@ -137,11 +126,9 @@ def test_session_yields_at_most_one_token(client):
     token = v1.json()["token"]
     assert token is not None
 
-    # Switch after solve fails
     sw = client.post("/api/challenge/switch", json={"session_id": sid})
     assert sw.status_code == 400
 
-    # Needs update after solve fails
     nd = client.post("/api/session/needs", json={"session_id": sid, "access_needs": ["vision"]})
     assert nd.status_code == 400
 

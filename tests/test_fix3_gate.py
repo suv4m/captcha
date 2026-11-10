@@ -5,11 +5,9 @@ from backend.app.main import app
 from backend.app.risk import get_required_features
 from backend.app.store import store
 
-
 @pytest.fixture
 def client():
     return TestClient(app)
-
 
 def test_session_needs_update_and_switch_compatibility(client):
     """
@@ -24,8 +22,6 @@ def test_session_needs_update_and_switch_compatibility(client):
             f[req[0]] = float(idx * 100 + 50)
         return f
 
-    # Case 1: Vision (excludes visual, drag)
-    # Start session with no needs and high B so visual is chosen
     res = client.post("/api/session", json={
         "site_key": "test_site",
         "features": req_feats(1),
@@ -40,7 +36,6 @@ def test_session_needs_update_and_switch_compatibility(client):
     orig_type = sess_data["challenge"]["type"]
     assert orig_type in ["visual", "drag"], f"Expected visual/drag, got {orig_type}"
 
-    # Update needs to ['vision']
     n_res = client.post("/api/session/needs", json={
         "session_id": sid,
         "access_needs": ["vision"]
@@ -52,10 +47,9 @@ def test_session_needs_update_and_switch_compatibility(client):
     type1 = ch1["type"]
     assert type1 not in ["visual", "drag"], f"Vision need got incompatible type {type1}"
     assert cid1 != orig_cid, "Challenge ID must be updated"
-    # Old challenge must be invalidated
+
     assert store.get_challenge(orig_cid) is None, "Previous challenge secret must be deleted"
 
-    # Switch afterwards -> must still be compatible
     sw_res = client.post("/api/challenge/switch", json={"session_id": sid})
     assert sw_res.status_code == 200
     sw_data = sw_res.json()
@@ -63,7 +57,6 @@ def test_session_needs_update_and_switch_compatibility(client):
     assert type_sw not in ["visual", "drag"], f"Switched challenge for vision need got incompatible {type_sw}"
     assert sw_data["swap_count"] == 1, "Switch must count as 1 swap (needs update did not count as swap)"
 
-    # Case 2: Hearing (never audio)
     res_h = client.post("/api/session", json={
         "site_key": "test_site",
         "features": req_feats(2),
@@ -83,7 +76,6 @@ def test_session_needs_update_and_switch_compatibility(client):
     assert sw_h.status_code == 200
     assert sw_h.json()["challenge"]["type"] != "audio", "Switched challenge for hearing got audio!"
 
-    # Case 3: Motor (never drag)
     res_m = client.post("/api/session", json={
         "site_key": "test_site",
         "features": req_feats(3),
@@ -103,7 +95,6 @@ def test_session_needs_update_and_switch_compatibility(client):
     assert sw_m.status_code == 200
     assert sw_m.json()["challenge"]["type"] != "drag", "Switched challenge for motor got drag!"
 
-    # Case 4: Cognitive (never level 3)
     res_c = client.post("/api/session", json={
         "site_key": "test_site",
         "features": req_feats(4),

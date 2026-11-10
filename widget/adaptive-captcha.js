@@ -166,7 +166,6 @@ TEMPLATE.innerHTML = `
   border: 0;
 }
 
-/* Challenge Modal / Overlay */
 .challenge-box {
   display: none;
   margin-top: 12px;
@@ -180,7 +179,6 @@ TEMPLATE.innerHTML = `
   margin-bottom: 8px;
 }
 
-/* Visual Grid */
 .grid-container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -228,7 +226,6 @@ TEMPLATE.innerHTML = `
   font-weight: bold;
 }
 
-/* Audio Player */
 .audio-player-box {
   display: flex;
   flex-direction: column;
@@ -253,7 +250,6 @@ TEMPLATE.innerHTML = `
   color: inherit;
 }
 
-/* Drag Puzzle */
 .drag-container {
   position: relative;
   width: 320px;
@@ -285,7 +281,6 @@ TEMPLATE.innerHTML = `
   margin: 10px 0;
 }
 
-/* PoW Progress */
 .pow-box {
   margin-bottom: 10px;
 }
@@ -306,7 +301,6 @@ TEMPLATE.innerHTML = `
   transition: width 100ms ease;
 }
 
-/* Action Buttons */
 .btn-row {
   display: flex;
   align-items: center;
@@ -452,20 +446,18 @@ export class AdaptiveCaptcha extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this.shadowRoot.appendChild(TEMPLATE.content.cloneNode(true));
 
-    this._state = "idle"; // idle, checking, passed, challenge, locked, error
+    this._state = "idle";
     this._token = null;
     this._session = null;
     this._activeChallenge = null;
     this._challengeStartTime = null;
     this._needsSeq = 0;
 
-    // Behavioral event buffer (in-memory ring buffer)
     this._events = [];
     this._mountTime = Date.now();
     this._pointerType = "none";
     this._listenersActive = false;
 
-    // DOM references
     this.$btn = this.shadowRoot.getElementById("verifyBtn");
     this.$box = this.shadowRoot.getElementById("checkboxBox");
     this.$label = this.shadowRoot.getElementById("checkboxLabel");
@@ -568,7 +560,7 @@ export class AdaptiveCaptcha extends HTMLElement {
         }
       }
     } catch (e) {
-      // localStorage disabled / denied
+
     }
   }
 
@@ -592,7 +584,7 @@ export class AdaptiveCaptcha extends HTMLElement {
         this._requiredFeatures = data.required_features;
       }
     } catch (e) {
-      // offline / pre-load error
+
     }
   }
 
@@ -610,7 +602,7 @@ export class AdaptiveCaptcha extends HTMLElement {
       const t = Date.now() - this._mountTime;
       this._events.push([t, 0, Math.round(e.clientX), Math.round(e.clientY)]);
       if (this._events.length > 600) {
-        // Keep ring buffer reasonable
+
         this._events.shift();
       }
     };
@@ -728,7 +720,6 @@ export class AdaptiveCaptcha extends HTMLElement {
     this.$label.textContent = "Verifying...";
     this._announce("Verifying interaction...");
 
-    // Build raw trace
     const verifyT = Date.now() - this._mountTime;
     const trace = {
       meta: {
@@ -738,7 +729,6 @@ export class AdaptiveCaptcha extends HTMLElement {
       events: this._events
     };
 
-    // Extract features locally (privacy by construction)
     const mode = (this.policy === "P1" || this.policy === "P2") ? "full" : "min";
     if (!this._requiredFeatures) {
       await this._loadConfig();
@@ -750,7 +740,7 @@ export class AdaptiveCaptcha extends HTMLElement {
 
     let payloadFeatures = buildFeaturePayload(trace, requiredNames);
     if (this.getAttribute("simulate-risk") === "high") {
-      // Simulate automated interaction with varied first feature to avoid replay cache
+
       payloadFeatures = {};
       requiredNames.forEach((k, idx) => {
         payloadFeatures[k] = idx === 0 ? (Date.now() % 1000) * 0.001 : 0.0;
@@ -787,7 +777,6 @@ export class AdaptiveCaptcha extends HTMLElement {
       const data = await res.json();
       this._session = data;
 
-      // Dispatch event with decision trace for demo page
       this.dispatchEvent(new CustomEvent("captcha-decision", {
         detail: data.trace,
         bubbles: true,
@@ -837,7 +826,6 @@ export class AdaptiveCaptcha extends HTMLElement {
     this.$challengePrompt.textContent = challenge.prompt || "Solve the challenge";
     this.$challengeContent.innerHTML = "";
 
-    // Render alternative challenge buttons
     const allAlts = [
       { type: "audio", label: "Audio" },
       { type: "visual", label: "Visual" },
@@ -867,7 +855,6 @@ export class AdaptiveCaptcha extends HTMLElement {
       this._renderPow(challenge);
     }
 
-    // Move focus to heading and announce via aria-live
     this.$challengePrompt.focus();
 
     let altHint = "an audio alternative";
@@ -983,7 +970,6 @@ export class AdaptiveCaptcha extends HTMLElement {
     piece.style.left = "0px";
     container.appendChild(piece);
 
-    // Accessible slider control
     const slider = document.createElement("input");
     slider.type = "range";
     slider.className = "drag-slider-track";

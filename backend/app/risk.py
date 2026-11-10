@@ -9,7 +9,6 @@ _CAL_MIN = None
 _CAL_FULL = None
 _FEATURE_SETS = None
 
-
 def _load_models():
     global _CAL_MIN, _CAL_FULL, _FEATURE_SETS
     if _CAL_MIN is None:
@@ -20,13 +19,11 @@ def _load_models():
         with open(ARTIFACTS_DIR / "feature_sets.json", "r", encoding="utf-8") as f:
             _FEATURE_SETS = json.load(f)
 
-
 def get_required_features(mode: str = "min") -> List[str]:
     _load_models()
     if mode == "full":
         return _FEATURE_SETS["full"]["names"]
     return _FEATURE_SETS["min"]["names"]
-
 
 def score_session_risk(features: Dict[str, float], mode: str = "min") -> float:
     _load_models()

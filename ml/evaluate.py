@@ -19,7 +19,6 @@ with open(CATALOG_PATH, "r", encoding="utf-8") as f:
 CHALLENGES = {c["id"]: c for c in CATALOG["challenges"]}
 INCOMPAT_PENALTY = CATALOG["incompatible_penalty"]
 
-
 def select_challenge(p: float, declared_needs: List[str], B: float = 60.0,
                      filter_accessible: bool = True) -> str:
     """
@@ -36,14 +35,13 @@ def select_challenge(p: float, declared_needs: List[str], B: float = 60.0,
 
     for cid, c in CHALLENGES.items():
         if filter_accessible:
-            # Drop level 3 if cognitive
+
             if has_cognitive and c["level"] == 3:
                 continue
-            # Drop incompatible
+
             if not needs_set.isdisjoint(c["incompatible_with"]):
                 continue
 
-        # Expected cost calculation
         T = c["T"]
         Sh = c["Sh"]
         Sb = c["Sb"]
@@ -51,7 +49,6 @@ def select_challenge(p: float, declared_needs: List[str], B: float = 60.0,
         bot_cost = B * Sb
         cost = (1.0 - p) * human_cost + p * bot_cost
 
-        # argmin with tie-breaking by lower T
         if cost < best_cost - 1e-9:
             best_cost = cost
             best_id = cid
@@ -64,7 +61,6 @@ def select_challenge(p: float, declared_needs: List[str], B: float = 60.0,
 
     return best_id
 
-
 def simulate_session(is_bot: int, subgroup: str, access_needs: List[str],
                      chosen_id: str, rng: np.random.RandomState) -> Dict[str, Any]:
     c = CHALLENGES[chosen_id]
@@ -74,8 +70,8 @@ def simulate_session(is_bot: int, subgroup: str, access_needs: List[str],
     if not is_bot:
         if not needs_set.isdisjoint(c["incompatible_with"]):
             is_violation = True
-            Sh = INCOMPAT_PENALTY["Sh"]  # 0.12
-            T = INCOMPAT_PENALTY["T"]    # 45.0
+            Sh = INCOMPAT_PENALTY["Sh"]
+            T = INCOMPAT_PENALTY["T"]
         else:
             Sh = c["Sh"]
             T = c["T"]
@@ -91,7 +87,6 @@ def simulate_session(is_bot: int, subgroup: str, access_needs: List[str],
         "is_violation": is_violation,
         "is_free": (chosen_id == "none" or c.get("invisible", False))
     }
-
 
 def evaluate_all(n_runs: int = 20, breach_cost: float = 2.0):
     print("[evaluate.py] Loading models and generating test population...")
@@ -109,9 +104,8 @@ def evaluate_all(n_runs: int = 20, breach_cost: float = 2.0):
     p_full = cal_full.predict_proba(X_test)[:, 1]
     p_min = cal_min.predict_proba(X_test_min)[:, 1]
 
-    # Save test scores for sub-100ms vectorised simulation on Lab page
     subgroups = np.array([m["subgroup"] for m in meta_test])
-    # Encoded needs: binary matrix (N, 4) for vision, hearing, motor, cognitive
+
     needs_keys = ["vision", "hearing", "motor", "cognitive"]
     needs_mat = np.zeros((len(meta_test), 4), dtype=np.int8)
     for i, m in enumerate(meta_test):
@@ -129,11 +123,6 @@ def evaluate_all(n_runs: int = 20, breach_cost: float = 2.0):
     )
     print(f"  Saved vectorized test scores to {ARTIFACTS_DIR / 'test_scores.npz'}")
 
-    # Policies:
-    # P0: Fixed vis2, 0 bytes
-    # P1: FULL model, selection ignores A
-    # P2: FULL model, filter by A
-    # P3: MIN model, filter by A
     policies = ["P0", "P1", "P2", "P3"]
     policy_names = {
         "P0": "P0: Fixed (vis2)",
@@ -143,9 +132,9 @@ def evaluate_all(n_runs: int = 20, breach_cost: float = 2.0):
     }
     bytes_per_session = {
         "P0": 0,
-        "P1": 216,  # ~25 floats + json overhead
+        "P1": 216,
         "P2": 216,
-        "P3": 68    # ~8 floats + json overhead
+        "P3": 68
     }
 
     results = {}
@@ -224,7 +213,6 @@ def evaluate_all(n_runs: int = 20, breach_cost: float = 2.0):
                 blk = sg_blocks[sg]
                 run_metrics["human_block_rate_by_subgroup"][sg].append(blk / max(1, tot))
 
-        # Aggregate mean and std
         summary = {
             "name": policy_names[pol],
             "bytes_collected": bytes_per_session[pol],

@@ -1,7 +1,4 @@
-/**
- * Client-side feature extractor.
- * Implements SPEC.md Section 5.1 with 100% parity with ml/extract.py.
- */
+
 
 export const FEATURE_NAMES = [
   "p_n_moves",
@@ -102,7 +99,6 @@ export function extractFeatures(trace) {
     }
   }
 
-  // Keep last 500 pointermoves per spec
   if (pointerMoves.length > 500) {
     pointerMoves = pointerMoves.slice(pointerMoves.length - 500);
   }
@@ -164,7 +160,6 @@ export function extractFeatures(trace) {
     pSpeedStd = std(speeds);
     pSpeedMax = speeds.length > 0 ? Math.max(...speeds) : 0.0;
 
-    // Accelerations
     if (speeds.length >= 2) {
       const accs = [];
       for (let i = 1; i < speeds.length; i++) {
@@ -174,7 +169,6 @@ export function extractFeatures(trace) {
       pAccStd = std(accs);
     }
 
-    // Direction changes > 30 deg between segments >= 4px per 100px path
     let dirChanges = 0.0;
     for (let i = 1; i < headings.length; i++) {
       let diff = Math.abs(headings[i] - headings[i - 1]);
@@ -191,7 +185,6 @@ export function extractFeatures(trace) {
     pDtStd = std(dtsMs);
   }
 
-  // Clicks
   const pClicks = pointerClicksT.length;
   let pClickGapStd = 0.0;
   if (pClicks >= 3) {
@@ -202,7 +195,6 @@ export function extractFeatures(trace) {
     pClickGapStd = std(gaps);
   }
 
-  // Keys
   const kN = keysT.length;
   let kGapMean = 0.0;
   let kGapStd = 0.0;
@@ -217,11 +209,9 @@ export function extractFeatures(trace) {
     }
   }
 
-  // Timing
   const tSinceMount = verifyT;
   const tFirstInteraction = events.length > 0 ? Number(events[0][0]) : verifyT;
 
-  // Idle ratio
   let tIdleRatio = 0.0;
   if (events.length >= 2) {
     const tFirst = Number(events[0][0]);

@@ -14,10 +14,8 @@ from backend.app.main import app
 
 SCREENS_DIR = BASE_DIR / "docs" / "screens"
 
-
 def start_server():
     uvicorn.run(app, host="127.0.0.1", port=8002, log_level="warning")
-
 
 def capture_all():
     SCREENS_DIR.mkdir(parents=True, exist_ok=True)
@@ -44,7 +42,6 @@ def capture_all():
             )
             page = context.new_page()
 
-            # 1. Demo page
             page.goto(f"{base_url}/")
             page.wait_for_load_state("networkidle")
             time.sleep(0.5)
@@ -52,7 +49,6 @@ def capture_all():
             page.screenshot(path=str(demo_out), full_page=True)
             print(f"Captured: {demo_out}")
 
-            # 2. Lab page
             page.goto(f"{base_url}/lab")
             page.wait_for_load_state("networkidle")
             time.sleep(1.0)
@@ -65,7 +61,6 @@ def capture_all():
         browser.close()
 
     print(f"All 8 screenshots successfully captured in {SCREENS_DIR}")
-
 
 if __name__ == "__main__":
     capture_all()

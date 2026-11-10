@@ -8,17 +8,14 @@ from typing import Dict, Any, Tuple
 
 from backend.app.config import DIGITS_DIR
 
-
 def _read_wav(path: Path) -> Tuple[int, bytes]:
     with wave.open(str(path), "rb") as wf:
         rate = wf.getframerate()
         frames = wf.readframes(wf.getnframes())
         return rate, frames
 
-
 def _add_noise(samples: list, snr_db: float, rng: random.Random) -> list:
-    # SNR = 10 * log10(P_signal / P_noise)
-    # P_noise = P_signal / (10^(SNR/10))
+
     p_signal = sum(s * s for s in samples) / max(1, len(samples))
     if p_signal <= 0:
         return samples
@@ -32,7 +29,6 @@ def _add_noise(samples: list, snr_db: float, rng: random.Random) -> list:
         val = max(-32767, min(32767, val))
         noisy.append(val)
     return noisy
-
 
 def create(level: int = 1, rng: random.Random = None) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     if rng is None:
@@ -57,10 +53,9 @@ def create(level: int = 1, rng: random.Random = None) -> Tuple[Dict[str, Any], D
             n = len(raw_frames) // 2
             samples = list(struct.unpack(f"<{n}h", raw_frames))
         else:
-            # Fallback inline tone
+
             samples = [int(15000.0 * math.sin(2.0 * math.pi * (300.0 + d * 100.0) * (i / 16000.0))) for i in range(8000)]
 
-        # Apply slight resampling/pitch variation (+-8%)
         resample_factor = rng.uniform(0.92, 1.08)
         new_len = int(len(samples) / resample_factor)
         resampled = []
@@ -73,16 +68,13 @@ def create(level: int = 1, rng: random.Random = None) -> Tuple[Dict[str, Any], D
 
         all_samples.extend(resampled)
 
-        # Gap between digits: 0.25 to 0.60 s
         if idx < len(digits) - 1:
             gap_duration = rng.uniform(0.25, 0.60)
             gap_samples = [0] * int(sample_rate * gap_duration)
             all_samples.extend(gap_samples)
 
-    # Add background noise at specified SNR
     noisy_samples = _add_noise(all_samples, snr_db, rng)
 
-    # Pack into WAV bytes
     buf = io.BytesIO()
     with wave.open(buf, "wb") as wf:
         wf.setnchannels(1)
@@ -104,7 +96,6 @@ def create(level: int = 1, rng: random.Random = None) -> Tuple[Dict[str, Any], D
         "audio_bytes": audio_bytes
     }
     return public, secret
-
 
 def verify(secret: Dict[str, Any], answer: Any, interaction: Dict[str, Any] = None) -> bool:
     if not isinstance(answer, (str, int)):

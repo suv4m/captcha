@@ -29,11 +29,9 @@ def test_ml_sanity_10_2():
     with open(ARTIFACTS_DIR / "metrics.json", "r", encoding="utf-8") as f:
         metrics = json.load(f)
 
-    # 1. Label shuffle test AUC within 0.5 +- 0.05
     shuffle_auc = metrics["label_shuffle_test_auc"]
     assert 0.45 <= shuffle_auc <= 0.55, f"Label shuffle AUC out of bounds: {shuffle_auc}"
 
-    # 2. Test AUC not degenerate (strictly < 0.995 and > 0.70)
     full_auc = metrics["full_model"]["roc_auc"]
     min_auc = metrics["min_model"]["roc_auc"]
     assert full_auc < 0.995, f"Defect: Test AUC >= 0.995 indicating trivial simulator/leakage: {full_auc}"
@@ -41,24 +39,20 @@ def test_ml_sanity_10_2():
     assert full_auc > 0.70, f"Model underperforming: {full_auc}"
     assert min_auc > 0.70, f"MIN model underperforming: {min_auc}"
 
-    # 3. ECE reported
     ece = metrics["min_model"]["ece"]
     assert ece is not None and ece > 0.0
 
-    # 4. Humanized recall honestly reported
     recalls = metrics["recall_by_bot_type"]
     assert "humanized" in recalls
     assert recalls["humanized"]["is_unseen"] is True
-    # Verify humanized recall is documented
+
     assert 0.0 <= recalls["humanized"]["recall_min_p50"] <= 1.0
 
-    # 5. False positive rates per subgroup
     fprs = metrics["false_positive_rate_by_human_subgroup"]
     for sg in ["desktop_mouse", "touch_mobile", "keyboard_assistive", "motor_tremor"]:
         assert sg in fprs
         assert 0.0 <= fprs[sg]["fpr_min_p50"] <= 0.20
 
-    # 6. Feature sets
     with open(ARTIFACTS_DIR / "feature_sets.json", "r", encoding="utf-8") as f:
         fsets = json.load(f)
     assert fsets["full"]["count"] == 25

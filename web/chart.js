@@ -1,7 +1,4 @@
-/**
- * Lightweight SVG Chart Helper for Lab visualizations.
- * Offline, vanilla, zero external dependencies.
- */
+
 
 export function renderLineChart(container, { data, xKey, yKey, title, xLabel, yLabel, minX = 0, maxX = 1, minY = 0, maxY = 1 }) {
   const w = 480;

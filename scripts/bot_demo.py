@@ -11,14 +11,13 @@ from ml.extract import extract_features, FEATURE_NAMES
 from backend.app.risk import score_session_risk, get_required_features
 from backend.app.decision import select_best_challenge
 
-
 def run_bot_demo(runs_per_type: int = 5):
     print("=" * 60)
     print("  BOT DEMO: Evaluating Bot Archetypes Against Risk Model")
     print("=" * 60)
 
     rng = random.Random(42)
-    # Generate human corpus for replay
+
     human_corpus = [generate_human_trace(rng, "desktop_mouse") for _ in range(10)]
 
     for btype in ["instant", "linear", "noisy", "humanized", "replay"]:
@@ -31,7 +30,7 @@ def run_bot_demo(runs_per_type: int = 5):
             feats = extract_features(tr)
             feat_dict = {name: val for name, val in zip(FEATURE_NAMES, feats)}
             req_dict = {name: feat_dict[name] for name in get_required_features("min")}
-            # Evaluate with MIN model (the live production default)
+
             p = score_session_risk(req_dict, mode="min")
             scores.append(p)
 
@@ -52,7 +51,6 @@ def run_bot_demo(runs_per_type: int = 5):
             print(f"  Result: Replay attack evaluated (Score: {mean_p:.3f}).")
 
     print("\nBot demo evaluation completed successfully!")
-
 
 if __name__ == "__main__":
     run_bot_demo()

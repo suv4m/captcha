@@ -11,11 +11,9 @@ sys.path.insert(0, str(BASE_DIR))
 os.environ["CAPTCHA_TEST_MODE"] = "1"
 from backend.app.main import app
 
-
 @pytest.fixture
 def client():
     return TestClient(app)
-
 
 def test_p0_live_behaviour(client):
     """
@@ -37,7 +35,6 @@ def test_p0_live_behaviour(client):
     assert data["trace"]["data_sent_bytes"] == 0
     assert data["trace"]["chosen_id"] == "vis2"
 
-
 def test_simulate_timing_under_one_second(client):
     """
     Gate Fix 8:
@@ -56,7 +53,6 @@ def test_simulate_timing_under_one_second(client):
     assert "mean_human_time_s" in data
     assert elapsed < 1.0, f"Simulation took {elapsed:.3f}s, expected under 1.0s!"
 
-
 def test_cors_no_allow_credentials_with_wildcard(client):
     """
     Gate Fix 8:
@@ -66,10 +62,9 @@ def test_cors_no_allow_credentials_with_wildcard(client):
         "Origin": "http://evil.com",
         "Access-Control-Request-Method": "GET"
     })
-    # If credentials are not allowed, header is absent or 'false'
+
     cred_header = res.headers.get("access-control-allow-credentials")
     assert cred_header != "true", f"access-control-allow-credentials must not be 'true' with wildcard origins! Got: {cred_header}"
-
 
 def test_site_key_validation(client):
     """
@@ -84,7 +79,6 @@ def test_site_key_validation(client):
     assert res.status_code == 400
     assert "site_key" in res.json().get("detail", "").lower()
 
-
 def test_run_py_fails_loudly_on_training_error(monkeypatch):
     """
     Gate Fix 8:
@@ -92,7 +86,6 @@ def test_run_py_fails_loudly_on_training_error(monkeypatch):
     """
     import run
 
-    # 1. Non-ImportError in training must raise loudly
     def mock_train_broken():
         raise RuntimeError("Fatal hardware/dataset error")
 

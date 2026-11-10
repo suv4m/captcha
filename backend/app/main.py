@@ -44,7 +44,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 def _instantiate_challenge(ctype: str, level: int) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     cid = f"ch_{uuid.uuid4().hex[:12]}"
     if ctype == "visual":
@@ -63,14 +62,12 @@ def _instantiate_challenge(ctype: str, level: int) -> Tuple[Dict[str, Any], Dict
     pub["id"] = cid
     return pub, sec
 
-
 @app.get("/")
 def serve_index():
     index_file = WEB_DIR / "index.html"
     if not index_file.exists():
         raise HTTPException(status_code=404, detail="Index page not found")
     return FileResponse(index_file)
-
 
 @app.get("/lab")
 def serve_lab():
@@ -79,7 +76,6 @@ def serve_lab():
         raise HTTPException(status_code=404, detail="Lab page not found")
     return FileResponse(lab_file)
 
-
 @app.get("/api/health")
 def health():
     return {
@@ -87,7 +83,6 @@ def health():
         "version": "1.0.0",
         "test_mode": config.CAPTCHA_TEST_MODE
     }
-
 
 @app.get("/api/config", response_model=ConfigResponse)
 def get_config(mode: str = "min"):
@@ -98,7 +93,6 @@ def get_config(mode: str = "min"):
         mode=mode
     )
 
-
 @app.post("/api/session", response_model=SessionResponse)
 def create_session(req: SessionRequest):
     if req.site_key not in config.VALID_SITE_KEYS:
@@ -106,7 +100,6 @@ def create_session(req: SessionRequest):
 
     session_id = f"sess_{uuid.uuid4().hex}"
 
-    # P0: Fixed baseline (fixed vis2, no scoring, 0 bytes sent)
     if req.policy == "P0":
         B = float(req.breach_cost if req.breach_cost is not None else DEFAULT_BREACH_COST)
         pub, sec = _instantiate_challenge("visual", 2)
@@ -154,17 +147,14 @@ def create_session(req: SessionRequest):
 
     mode = "full" if req.policy in ["P1", "P2"] else "min"
 
-    # Replay guard check per Fix 9
     if store.check_replay(req.features):
         store.log_event(band="high", challenge_type="none", level=0, outcome="fail_replay_rejected",
                         duration_ms=0, swap_count=0)
         raise HTTPException(status_code=400, detail="Replay attack detected: duplicate feature vector within TTL.")
 
-    # 1. Score risk
     p = score_session_risk(req.features, mode=mode)
     B = float(req.breach_cost if req.breach_cost is not None else DEFAULT_BREACH_COST)
 
-    # 2. Decision selection
     filter_accessible = req.policy != "P1"
     decision = select_best_challenge(
         p, req.access_needs, B=B, filter_accessible=filter_accessible
@@ -174,7 +164,6 @@ def create_session(req: SessionRequest):
     cid = chosen_c["id"]
     band = decision["band"]
 
-    # Calculate data sent bytes for transparency
     payload_str = json.dumps(req.features)
     data_sent_bytes = len(payload_str.encode("utf-8"))
 
@@ -192,7 +181,7 @@ def create_session(req: SessionRequest):
     }
 
     if cid == "none":
-        # Friction-free silent pass
+
         token = generate_token(session_id, challenge_type="none", band=band)
         store.create_session(session_id, {
             "p": p,
@@ -213,11 +202,9 @@ def create_session(req: SessionRequest):
             trace=trace
         )
 
-    # Create challenge
     pub, sec = _instantiate_challenge(chosen_c["type"], chosen_c["level"])
     challenge_id = pub["challenge_id"]
 
-    # Store challenge securely in-memory
     store.save_challenge(challenge_id, {
         "type": chosen_c["type"],
         "level": chosen_c["level"],
@@ -225,7 +212,6 @@ def create_session(req: SessionRequest):
         "session_id": session_id
     })
 
-    # Store session
     store.create_session(session_id, {
         "p": p,
         "band": band,
@@ -246,7 +232,6 @@ def create_session(req: SessionRequest):
         trace=trace
     )
 
-
 @app.post("/api/challenge/verify", response_model=VerifyResponse)
 def verify_challenge(req: VerifyRequest):
     sess = store.get_session(req.session_id)
@@ -266,13 +251,11 @@ def verify_challenge(req: VerifyRequest):
     if not ch_data or ch_data.get("session_id") != req.session_id:
         raise HTTPException(status_code=400, detail="Invalid challenge for session")
 
-    # Server-measured solve time (anti-instant-bot)
     now = time.time()
     issued_at = ch_data.get("issued_at", ch_data.get("created_at", now))
     duration_ms = max(0, int((now - issued_at) * 1000))
     ctype = ch_data["type"]
 
-    # Apply 400ms minimum only to visual, audio, and drag (never PoW)
     if ctype in ["visual", "audio", "drag"] and duration_ms < MIN_INTERACTION_MS:
         store.delete_challenge(req.challenge_id)
         attempts_left = sess["attempts_left"] - 1
@@ -306,7 +289,6 @@ def verify_challenge(req: VerifyRequest):
             new_challenge=new_challenge
         )
 
-    # Verify answer against challenge secret
     secret = ch_data["secret"]
     is_correct = False
 
@@ -336,7 +318,6 @@ def verify_challenge(req: VerifyRequest):
             locked=False
         )
 
-    # Failed attempt: delete old challenge secret
     store.delete_challenge(req.challenge_id)
     attempts_left = sess["attempts_left"] - 1
     locked = (attempts_left <= 0)
@@ -347,7 +328,7 @@ def verify_challenge(req: VerifyRequest):
 
     new_challenge = None
     if attempts_left > 0:
-        # Fresh challenge of same type per Section 5.2
+
         pub, sec = _instantiate_challenge(ctype, sess["level"])
         new_cid = pub["challenge_id"]
         store.save_challenge(new_cid, {
@@ -370,7 +351,6 @@ def verify_challenge(req: VerifyRequest):
         new_challenge=new_challenge
     )
 
-
 @app.post("/api/session/needs", response_model=SessionNeedsResponse)
 def update_session_needs(req: SessionNeedsRequest):
     sess = store.get_session(req.session_id)
@@ -383,22 +363,18 @@ def update_session_needs(req: SessionNeedsRequest):
     if sess.get("locked", False):
         raise HTTPException(status_code=400, detail="Session is locked")
 
-    # Invalidate previous challenge
     old_cid = sess.get("current_challenge_id")
     if old_cid:
         store.delete_challenge(old_cid)
 
-    # Update session access needs
     sess["access_needs"] = req.access_needs
 
-    # Recompute best challenge with updated needs
     p = sess["p"]
     B = sess.get("B", DEFAULT_BREACH_COST)
     filter_accessible = sess.get("policy") != "P1"
     decision = select_best_challenge(p, req.access_needs, B=B, exclude_type="none", filter_accessible=filter_accessible)
     chosen_c = decision["chosen_challenge"]
 
-    # Instantiate replacement challenge
     pub, sec = _instantiate_challenge(chosen_c["type"], chosen_c["level"])
     new_cid = pub["challenge_id"]
 
@@ -421,7 +397,6 @@ def update_session_needs(req: SessionNeedsRequest):
         allowed_ids=decision["allowed_ids"]
     )
 
-
 @app.post("/api/challenge/switch")
 def switch_challenge(req: SwitchRequest):
     sess = store.get_session(req.session_id)
@@ -438,7 +413,6 @@ def switch_challenge(req: SwitchRequest):
     if swap_count >= 2:
         raise HTTPException(status_code=400, detail="Maximum 2 challenge swaps allowed per session")
 
-    # Invalidate old challenge secret
     old_cid = sess.get("current_challenge_id")
     if old_cid:
         store.delete_challenge(old_cid)
@@ -479,7 +453,7 @@ def switch_challenge(req: SwitchRequest):
         scored.sort(key=lambda item: (round(item[0], 6), item[1], item[2]))
         chosen_c = scored[0][3]
     else:
-        # Re-run selection excluding current type using updated access needs
+
         decision = select_best_challenge(
             sess["p"], sess.get("access_needs", []), B=sess.get("B", DEFAULT_BREACH_COST),
             exclude_type=current_type, filter_accessible=filter_accessible
@@ -511,7 +485,6 @@ def switch_challenge(req: SwitchRequest):
         "swap_count": swap_count + 1
     }
 
-
 @app.get("/api/challenge/{cid}/audio")
 def get_challenge_audio(cid: str):
     ch_data = store.get_challenge(cid)
@@ -528,14 +501,12 @@ def get_challenge_audio(cid: str):
         headers={"Cache-Control": "no-store"}
     )
 
-
 @app.post("/api/siteverify", response_model=SiteVerifyResponse)
 def siteverify(req: SiteVerifyRequest):
     data = parse_and_verify_token(req.token)
     if not data:
         return SiteVerifyResponse(success=False, error="invalid_or_expired_token")
 
-    # Single-use guarantee
     if not store.mark_token_used(req.token):
         return SiteVerifyResponse(success=False, error="token_already_consumed")
 
@@ -546,10 +517,9 @@ def siteverify(req: SiteVerifyRequest):
         ts=data.get("ts")
     )
 
-
 @app.post("/api/demo/login", response_model=DemoLoginResponse)
 def demo_login(req: DemoLoginRequest):
-    # Server-side verification of captcha token
+
     res = siteverify(SiteVerifyRequest(token=req.captcha_token))
     if not res.success:
         raise HTTPException(status_code=400, detail=f"CAPTCHA verification failed: {res.error}")
@@ -558,7 +528,6 @@ def demo_login(req: DemoLoginRequest):
         success=True,
         message=f"Welcome {req.username}! Verified via {res.challenge_type} ({res.band} risk)."
     )
-
 
 @app.get("/api/lab/results")
 def get_lab_results():
@@ -585,9 +554,7 @@ def get_lab_results():
         "b_sweep": b_sweep
     }
 
-
 _SCORES_CACHE = None
-
 
 def _get_scores_data():
     global _SCORES_CACHE
@@ -604,7 +571,6 @@ def _get_scores_data():
             "needs_mat": data["needs_mat"]
         }
     return _SCORES_CACHE
-
 
 @app.get("/api/lab/simulate")
 def lab_simulate(
@@ -631,7 +597,6 @@ def lab_simulate(
     needs_mat = cached["needs_mat"]
     needs_keys = ["vision", "hearing", "motor", "cognitive"]
 
-    # Vectorised challenge selection (sub-5ms across 6000 sessions)
     ch_list = list(CHALLENGES.values())
     K = len(ch_list)
     needs_map = {"vision": 0, "hearing": 1, "motor": 2, "cognitive": 3}
@@ -643,7 +608,7 @@ def lab_simulate(
         for k, c in enumerate(ch_list):
             hc = (c["T"] / 10.0) + 3.0 * (1.0 - c["Sh"])
             bc = breach_cost * c["Sb"]
-            # Tie-break by lower T using 1e-6 epsilon
+
             cost_k = (1.0 - p_vec) * hc + p_vec * bc + (c["T"] * 1e-6)
 
             if filter_accessible:
@@ -664,7 +629,6 @@ def lab_simulate(
     c_T = np.array([ch_list[k]["T"] for k in best_k])
     is_free = np.array([(ch_list[k]["id"] == "none" or ch_list[k].get("invisible", False)) for k in best_k], dtype=bool)
 
-    # Check accessibility violations
     is_violation = np.zeros(n_sessions, dtype=bool)
     if not filter_accessible:
         for k, c in enumerate(ch_list):
@@ -679,7 +643,6 @@ def lab_simulate(
     pass_prob = np.where(is_bot, c_Sb, np.where(is_violation, INCOMPAT_PENALTY["Sh"], c_Sh))
     time_spent = np.where(is_violation, INCOMPAT_PENALTY["T"], c_T)
 
-    # Vectorised Monte Carlo runs
     rng = np.random.RandomState(100)
     rand_matrix = rng.random((runs, n_sessions))
     passed_matrix = rand_matrix < pass_prob
@@ -704,7 +667,6 @@ def lab_simulate(
         "challenge_free_rate": round(challenge_free_rate, 4)
     }
 
-
 @app.post("/api/collect")
 def collect_sample(payload: Dict[str, Any]):
     """Opt-in research data collection: features + human label only."""
@@ -724,7 +686,6 @@ def collect_sample(payload: Dict[str, Any]):
 
     return {"status": "collected"}
 
-
 @app.get("/api/_test/secret/{cid}")
 def get_test_secret(cid: str):
     """
@@ -740,7 +701,7 @@ def get_test_secret(cid: str):
         raise HTTPException(status_code=404, detail="Challenge not found")
 
     sec = ch.get("secret", {})
-    # Return answer format suitable for test solver
+
     ctype = ch.get("type")
     if ctype == "visual":
         return {"answer": sec.get("target_indices")}
@@ -749,7 +710,7 @@ def get_test_secret(cid: str):
     elif ctype == "drag":
         return {"answer": {"x": sec.get("hole_x")}}
     elif ctype == "pow":
-        # Solve pow for test
+
         nonce = sec.get("nonce")
         bits = sec.get("bits")
         counter = 0
@@ -761,8 +722,6 @@ def get_test_secret(cid: str):
 
     return {"secret": sec}
 
-
-# Mount static web assets if directory exists
 if WEB_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(WEB_DIR)), name="static")
 if WIDGET_DIR.exists():

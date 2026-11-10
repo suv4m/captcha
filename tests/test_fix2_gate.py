@@ -6,7 +6,6 @@ import json
 from backend.app.config import ARTIFACTS_DIR, CATALOG_PATH, DEFAULT_BREACH_COST
 from backend.app.decision import select_best_challenge
 
-
 def test_human_mix_not_more_than_50_percent_single_challenge():
     """Gate test: At chosen DEFAULT_BREACH_COST, human mix is not more than 50% single-challenge."""
     npz_path = ARTIFACTS_DIR / "test_scores.npz"
@@ -26,8 +25,6 @@ def test_human_mix_not_more_than_50_percent_single_challenge():
     most_common_cid, most_common_cnt = counts.most_common(1)[0]
     max_share = most_common_cnt / n_humans
 
-    # Target in Fix 2: most humans receive 'none' or an invisible PoW challenge,
-    # and no intrusive challenge (e.g. vis3) exceeds 50% share.
     if most_common_cid == "none":
         assert max_share >= 0.50, "Expected most humans to receive 'none' or invisible PoW"
     else:
@@ -35,7 +32,6 @@ def test_human_mix_not_more_than_50_percent_single_challenge():
             f"At DEFAULT_BREACH_COST={DEFAULT_BREACH_COST}, single-challenge '{most_common_cid}' "
             f"has {max_share * 100:.1f}% share, exceeding 50% limit! Full shares: {shares}"
         )
-
 
 def test_bots_with_high_risk_never_receive_none_or_pow1():
     """Gate test: Bots with p > 0.9 never receive 'none' or 'pow1' at DEFAULT_BREACH_COST."""
@@ -56,7 +52,6 @@ def test_bots_with_high_risk_never_receive_none_or_pow1():
             assert cid not in ["none", "pow1"], (
                 f"Bot with p={p} and needs={needs} received weak challenge '{cid}'!"
             )
-
 
 def test_catalog_pow_invisible_flag():
     """Verify pow1 and pow2 in catalog.json are marked invisible."""

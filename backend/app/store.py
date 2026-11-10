@@ -10,7 +10,6 @@ from backend.app.config import (
 
 DB_PATH = DATA_DIR / "captcha.db"
 
-
 class Storage:
     def __init__(self):
         self._lock = threading.Lock()
@@ -141,6 +140,5 @@ class Storage:
         ]
         for cid in expired_challenges:
             del self._challenges[cid]
-
 
 store = Storage()
