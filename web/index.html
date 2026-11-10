@@ -40,7 +40,7 @@
           </div>
 
           <div class="form-group">
-            <adaptive-captcha id="captchaWidget" endpoint="/api" site-key="demo-site-key" policy="P3"></adaptive-captcha>
+            <adaptive-captcha id="captchaWidget" endpoint="/api" site-key="demo-site-key" policy="P3" simulate-risk="high"></adaptive-captcha>
           </div>
 
           <button type="submit" id="loginSubmitBtn" class="submit-btn">Sign in</button>
@@ -70,8 +70,8 @@
           <div class="control-row">
             <label for="riskSelect">Interaction Profile</label>
             <select id="riskSelect" class="select-control">
-              <option value="auto" selected>Natural Human (Live Risk p &lt; 0.15 → Silent Pass)</option>
-              <option value="high">Simulate Suspicious / Bot (p &gt; 0.99 → Triggers Challenge)</option>
+              <option value="high" selected>Simulate Suspicious / Bot (p &gt; 0.99 → Triggers Challenge)</option>
+              <option value="auto">Natural Human (Live Risk p &lt; 0.15 → Silent Pass)</option>
             </select>
           </div>
 
