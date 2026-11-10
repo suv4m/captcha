@@ -397,16 +397,16 @@ TEMPLATE.innerHTML = `
   </button>
   <div class="a11y-options hidden" id="a11yOptions">
     <label class="a11y-label">
-      <input type="checkbox" value="vision" class="a11y-cb"> Vision
+      <input type="checkbox" value="vision" class="a11y-cb"> Vision impairment (avoids visual)
     </label>
     <label class="a11y-label">
-      <input type="checkbox" value="hearing" class="a11y-cb"> Hearing
+      <input type="checkbox" value="hearing" class="a11y-cb"> Hearing impairment (avoids audio)
     </label>
     <label class="a11y-label">
-      <input type="checkbox" value="motor" class="a11y-cb"> Motor
+      <input type="checkbox" value="motor" class="a11y-cb"> Motor impairment (avoids drag)
     </label>
     <label class="a11y-label">
-      <input type="checkbox" value="cognitive" class="a11y-cb"> Cognitive
+      <input type="checkbox" value="cognitive" class="a11y-cb"> Cognitive need (avoids complex)
     </label>
     <label class="a11y-label" style="grid-column: 1 / -1; margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--cap-border);">
       <input type="checkbox" id="rememberNeedsCb" class="remember-cb"> Remember on this device
@@ -485,7 +485,7 @@ export class AdaptiveCaptcha extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ["endpoint", "site-key", "policy"];
+    return ["endpoint", "site-key", "policy", "breach-cost", "simulate-risk"];
   }
 
   get endpoint() {
@@ -498,6 +498,40 @@ export class AdaptiveCaptcha extends HTMLElement {
 
   get policy() {
     return this.getAttribute("policy") || "P3";
+  }
+
+  set policy(val) {
+    this.setAttribute("policy", val);
+  }
+
+  get breachCost() {
+    const val = this.getAttribute("breach-cost");
+    return val ? parseFloat(val) : null;
+  }
+
+  set breachCost(val) {
+    if (val !== null && val !== undefined) {
+      this.setAttribute("breach-cost", String(val));
+    } else {
+      this.removeAttribute("breach-cost");
+    }
+  }
+
+  reset() {
+    this._stopPowWorker();
+    this._state = "idle";
+    this._token = null;
+    this._session = null;
+    this._activeChallenge = null;
+    this._challengeStartTime = null;
+    this.$box.innerHTML = "";
+    this.$label.textContent = "Verify you are human";
+    this.$challengeBox.style.display = "none";
+    this.$challengeError.style.display = "none";
+    this.$btn.setAttribute("aria-busy", "false");
+    this._mountTime = Date.now();
+    this._events = [];
+    this._startCollector();
   }
 
   connectedCallback() {
@@ -714,7 +748,15 @@ export class AdaptiveCaptcha extends HTMLElement {
       "p_path_len", "p_acc_std", "t_idle_ratio", "k_gap_mean"
     ]);
 
-    const payloadFeatures = buildFeaturePayload(trace, requiredNames);
+    let payloadFeatures = buildFeaturePayload(trace, requiredNames);
+    if (this.getAttribute("simulate-risk") === "high") {
+      // Simulate automated interaction with varied first feature to avoid replay cache
+      payloadFeatures = {};
+      requiredNames.forEach((k, idx) => {
+        payloadFeatures[k] = idx === 0 ? (Date.now() % 1000) * 0.001 : 0.0;
+      });
+    }
+
     const featureCount = Object.keys(payloadFeatures).length;
     const payloadBytes = new TextEncoder().encode(JSON.stringify(payloadFeatures)).length;
     this._updatePrivacyNotice(featureCount, payloadBytes);
@@ -722,15 +764,20 @@ export class AdaptiveCaptcha extends HTMLElement {
     const needs = this._getSelectedNeeds();
 
     try {
+      const payload = {
+        site_key: this.siteKey,
+        features: payloadFeatures,
+        access_needs: needs,
+        policy: this.policy
+      };
+      if (this.breachCost !== null) {
+        payload.breach_cost = this.breachCost;
+      }
+
       const res = await fetch(`${this.endpoint}/session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          site_key: this.siteKey,
-          features: payloadFeatures,
-          access_needs: needs,
-          policy: this.policy
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
