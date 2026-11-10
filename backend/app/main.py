@@ -197,8 +197,14 @@ def verify_challenge(req: VerifyRequest):
     if not sess:
         raise HTTPException(status_code=404, detail="Session not found or expired")
 
+    if sess.get("solved", False):
+        raise HTTPException(status_code=409, detail="Session already solved")
+
     if sess.get("locked", False):
         return VerifyResponse(ok=False, attempts_left=0, locked=True, error="Session locked")
+
+    if req.challenge_id != sess.get("current_challenge_id"):
+        raise HTTPException(status_code=400, detail="Challenge is not the current active challenge for session")
 
     ch_data = store.get_challenge(req.challenge_id)
     if not ch_data or ch_data.get("session_id") != req.session_id:
@@ -212,6 +218,7 @@ def verify_challenge(req: VerifyRequest):
 
     # Apply 400ms minimum only to visual, audio, and drag (never PoW)
     if ctype in ["visual", "audio", "drag"] and duration_ms < MIN_INTERACTION_MS:
+        store.delete_challenge(req.challenge_id)
         attempts_left = sess["attempts_left"] - 1
         locked = (attempts_left <= 0)
         store.update_session(req.session_id, {"attempts_left": attempts_left, "locked": locked})
@@ -231,6 +238,8 @@ def verify_challenge(req: VerifyRequest):
             })
             store.update_session(req.session_id, {"current_challenge_id": new_cid})
             new_challenge = pub
+        else:
+            store.update_session(req.session_id, {"current_challenge_id": None})
 
         return VerifyResponse(
             ok=False,
@@ -255,6 +264,11 @@ def verify_challenge(req: VerifyRequest):
         is_correct = pow_mod.verify(secret, req.answer, req.interaction)
 
     if is_correct:
+        store.delete_challenge(req.challenge_id)
+        store.update_session(req.session_id, {
+            "solved": True,
+            "current_challenge_id": None
+        })
         token = generate_token(req.session_id, challenge_type=ctype, band=sess["band"])
         store.log_event(band=sess["band"], challenge_type=ctype, level=sess["level"],
                         outcome="pass_solved", duration_ms=duration_ms,
@@ -266,7 +280,8 @@ def verify_challenge(req: VerifyRequest):
             locked=False
         )
 
-    # Failed attempt
+    # Failed attempt: delete old challenge secret
+    store.delete_challenge(req.challenge_id)
     attempts_left = sess["attempts_left"] - 1
     locked = (attempts_left <= 0)
     store.update_session(req.session_id, {"attempts_left": attempts_left, "locked": locked})
@@ -287,6 +302,8 @@ def verify_challenge(req: VerifyRequest):
         })
         store.update_session(req.session_id, {"current_challenge_id": new_cid})
         new_challenge = pub
+    else:
+        store.update_session(req.session_id, {"current_challenge_id": None})
 
     return VerifyResponse(
         ok=False,
@@ -303,6 +320,9 @@ def update_session_needs(req: SessionNeedsRequest):
     sess = store.get_session(req.session_id)
     if not sess:
         raise HTTPException(status_code=404, detail="Session not found or expired")
+
+    if sess.get("solved", False):
+        raise HTTPException(status_code=400, detail="Session already solved")
 
     if sess.get("locked", False):
         raise HTTPException(status_code=400, detail="Session is locked")
@@ -351,6 +371,9 @@ def switch_challenge(req: SwitchRequest):
     sess = store.get_session(req.session_id)
     if not sess:
         raise HTTPException(status_code=404, detail="Session not found or expired")
+
+    if sess.get("solved", False):
+        raise HTTPException(status_code=400, detail="Session already solved")
 
     if sess.get("locked", False):
         raise HTTPException(status_code=400, detail="Session is locked")
@@ -615,7 +638,8 @@ def get_test_secret(cid: str):
     Test hook per Section 5.2: Exists ONLY when CAPTCHA_TEST_MODE=1.
     Returns 404 otherwise!
     """
-    if not config.CAPTCHA_TEST_MODE:
+    is_test_mode = config.CAPTCHA_TEST_MODE and os.getenv("CAPTCHA_TEST_MODE", "0") == "1"
+    if not is_test_mode:
         raise HTTPException(status_code=404, detail="Not found")
 
     ch = store.get_challenge(cid)

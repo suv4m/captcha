@@ -550,3 +550,23 @@ tests/test_fix5_gate.py::test_server_measured_solve_time_visual_fails_pow_passes
 ============================== 1 passed in 4.53s ==============================
 Result: PASS
 ```
+
+## Fix 6: Challenge reuse and token minting
+
+### Gate: tests/test_fix6_gate.py
+```
+pytest -v tests/test_fix6_gate.py
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.2.0, pluggy-1.7.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\captcha
+plugins: anyio-4.12.1
+collecting ... collected 3 items
+
+tests/test_fix6_gate.py::test_challenge_reuse_after_success_rejected_409 PASSED [ 33%]
+tests/test_fix6_gate.py::test_preswap_challenge_id_rejected_400 PASSED   [ 66%]
+tests/test_fix6_gate.py::test_session_yields_at_most_one_token PASSED    [100%]
+
+============================== 3 passed in 5.63s ==============================
+Result: PASS
+```
