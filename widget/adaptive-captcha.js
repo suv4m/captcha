@@ -414,7 +414,7 @@ TEMPLATE.innerHTML = `
   </div>
 
   <div class="captcha-row">
-    <button type="button" class="checkbox-btn" id="verifyBtn" aria-checked="false" role="checkbox">
+    <button type="button" class="checkbox-btn" id="verifyBtn" aria-busy="false">
       <div class="checkbox-box" id="checkboxBox"></div>
       <span id="checkboxLabel">Verify you are human</span>
     </button>
@@ -506,6 +506,18 @@ export class AdaptiveCaptcha extends HTMLElement {
     this._loadConfig();
     this._initRememberedNeeds();
     this._updatePrivacyNotice();
+  }
+
+  disconnectedCallback() {
+    this._stopPowWorker();
+    this._stopCollector();
+  }
+
+  _stopPowWorker() {
+    if (this._powWorker) {
+      try { this._powWorker.terminate(); } catch (e) {}
+      this._powWorker = null;
+    }
   }
 
   _initRememberedNeeds() {
@@ -677,6 +689,7 @@ export class AdaptiveCaptcha extends HTMLElement {
     if (this._state === "checking" || this._state === "passed") return this._token;
 
     this._state = "checking";
+    this.$btn.setAttribute("aria-busy", "true");
     this.$box.innerHTML = `<div class="spinner"></div>`;
     this.$label.textContent = "Verifying...";
     this._announce("Verifying interaction...");
@@ -751,7 +764,7 @@ export class AdaptiveCaptcha extends HTMLElement {
     this.$box.innerHTML = `<span class="passed-check">✓</span>`;
     this.$label.textContent = "Verification complete";
     this.$challengeBox.style.display = "none";
-    this.$btn.setAttribute("aria-checked", "true");
+    this.$btn.setAttribute("aria-busy", "false");
     this._announce("Verification successful.");
 
     this.dispatchEvent(new CustomEvent("captcha-verified", {
@@ -762,10 +775,8 @@ export class AdaptiveCaptcha extends HTMLElement {
   }
 
   _showChallenge(challenge) {
-    if (this._powInterval) {
-      clearInterval(this._powInterval);
-      this._powInterval = null;
-    }
+    this._stopPowWorker();
+    this.$btn.setAttribute("aria-busy", "false");
     this._state = "challenge";
     this._activeChallenge = challenge;
     this._challengeStartTime = Date.now();
@@ -825,6 +836,8 @@ export class AdaptiveCaptcha extends HTMLElement {
   _renderVisual(challenge) {
     const grid = document.createElement("div");
     grid.className = "grid-container";
+    grid.setAttribute("role", "group");
+    grid.setAttribute("aria-labelledby", "challengePrompt");
     this._selectedTiles = new Set();
 
     challenge.tiles.forEach((tileUri, idx) => {
@@ -832,6 +845,7 @@ export class AdaptiveCaptcha extends HTMLElement {
       btn.type = "button";
       btn.className = "grid-tile";
       btn.setAttribute("aria-label", `Tile ${idx + 1}`);
+      btn.setAttribute("aria-pressed", "false");
       const img = document.createElement("img");
       img.src = tileUri;
       img.alt = "";
@@ -841,9 +855,11 @@ export class AdaptiveCaptcha extends HTMLElement {
         if (this._selectedTiles.has(idx)) {
           this._selectedTiles.delete(idx);
           btn.classList.remove("selected");
+          btn.setAttribute("aria-pressed", "false");
         } else {
           this._selectedTiles.add(idx);
           btn.classList.add("selected");
+          btn.setAttribute("aria-pressed", "true");
         }
       });
       grid.appendChild(btn);
@@ -862,7 +878,8 @@ export class AdaptiveCaptcha extends HTMLElement {
     const playBtn = document.createElement("button");
     playBtn.type = "button";
     playBtn.className = "btn-secondary";
-    playBtn.textContent = "▶ Play Audio";
+    playBtn.textContent = "Play audio";
+    playBtn.setAttribute("aria-label", "Play audio");
 
     let replayCount = 0;
     const countBadge = document.createElement("span");
@@ -874,7 +891,12 @@ export class AdaptiveCaptcha extends HTMLElement {
     playBtn.addEventListener("click", () => {
       if (replayCount >= 3) return;
       audioEl.currentTime = 0;
-      audioEl.play();
+      const playPromise = audioEl.play();
+      if (playPromise && playPromise.catch) {
+        playPromise.catch((err) => {
+          console.warn("Audio playback failed or blocked:", err);
+        });
+      }
       replayCount++;
       const left = 3 - replayCount;
       countBadge.textContent = `${left} play${left === 1 ? '' : 's'} left`;
@@ -889,6 +911,9 @@ export class AdaptiveCaptcha extends HTMLElement {
     input.className = "audio-input";
     input.placeholder = `Enter the ${challenge.length} numbers`;
     input.id = "audioAnswerInput";
+    input.setAttribute("aria-label", `Enter the ${challenge.length} numbers heard in audio`);
+    input.setAttribute("inputmode", "numeric");
+    input.setAttribute("autocomplete", "off");
 
     box.appendChild(ctrl);
     box.appendChild(input);
@@ -933,8 +958,17 @@ export class AdaptiveCaptcha extends HTMLElement {
   }
 
   async _renderPow(challenge) {
+    this._stopPowWorker();
     const box = document.createElement("div");
     box.className = "pow-box";
+
+    if (!window.crypto || !window.crypto.subtle) {
+      box.innerHTML = `<div class="error-text" style="display:block;">Web Crypto API (crypto.subtle) is not available. Please access via HTTPS or localhost.</div>`;
+      this._announce("Web Crypto API is not available.");
+      this.$challengeContent.appendChild(box);
+      return;
+    }
+
     box.innerHTML = `
       <div>Computing proof-of-work security token (${challenge.bits} bits)...</div>
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="powFill"></div></div>
@@ -945,44 +979,61 @@ export class AdaptiveCaptcha extends HTMLElement {
     const fill = box.querySelector("#powFill");
     fill.style.width = "40%";
 
-    // Compute SHA-256 counter in background
-    setTimeout(async () => {
-      const nonce = challenge.nonce;
-      const bits = challenge.bits;
-      let counter = 0;
-
-      while (true) {
-        const msg = `${nonce}:${counter}`;
+    const workerCode = `
+      self.onmessage = async (e) => {
+        const { nonce, bits } = e.data;
         const encoder = new TextEncoder();
-        const data = encoder.encode(msg);
-        const hashBuf = await crypto.subtle.digest("SHA-256", data);
-        const hashBytes = new Uint8Array(hashBuf);
-
-        let zeros = 0;
-        for (let i = 0; i < hashBytes.length; i++) {
-          const b = hashBytes[i];
-          if (b === 0) {
-            zeros += 8;
-          } else {
-            zeros += (8 - (Math.floor(Math.log2(b)) + 1));
+        let counter = 0;
+        while (true) {
+          const data = encoder.encode(nonce + ":" + counter);
+          const hashBuf = await crypto.subtle.digest("SHA-256", data);
+          const hashBytes = new Uint8Array(hashBuf);
+          let zeros = 0;
+          for (let i = 0; i < hashBytes.length; i++) {
+            const b = hashBytes[i];
+            if (b === 0) {
+              zeros += 8;
+            } else {
+              zeros += Math.clz32(b) - 24;
+              break;
+            }
+          }
+          if (zeros >= bits) {
+            self.postMessage({ ok: true, counter });
             break;
           }
+          counter++;
+          if (counter % 5000 === 0) {
+            self.postMessage({ progress: counter });
+          }
         }
+      };
+    `;
 
-        if (zeros >= bits) {
-          this._powCounter = counter;
-          fill.style.width = "100%";
-          this.$submitBtn.disabled = false;
-          // Auto submit PoW upon completion
-          this._submitChallenge();
-          break;
-        }
-        counter++;
-        if (counter % 5000 === 0) {
-          fill.style.width = `${Math.min(95, 40 + (counter / 30000) * 50)}%`;
-        }
+    const blob = new Blob([workerCode], { type: "application/javascript" });
+    const workerUrl = URL.createObjectURL(blob);
+    this._powWorker = new Worker(workerUrl);
+
+    this._powWorker.onmessage = (e) => {
+      if (e.data.ok) {
+        this._powCounter = e.data.counter;
+        fill.style.width = "100%";
+        this.$submitBtn.disabled = false;
+        this._stopPowWorker();
+        URL.revokeObjectURL(workerUrl);
+        this._submitChallenge();
+      } else if (e.data.progress) {
+        fill.style.width = `${Math.min(95, 40 + (e.data.progress / 30000) * 50)}%`;
       }
-    }, 50);
+    };
+
+    this._powWorker.onerror = (err) => {
+      console.error("PoW worker error:", err);
+      this._stopPowWorker();
+      URL.revokeObjectURL(workerUrl);
+    };
+
+    this._powWorker.postMessage({ nonce: challenge.nonce, bits: challenge.bits });
   }
 
   async _submitChallenge() {
@@ -1027,10 +1078,19 @@ export class AdaptiveCaptcha extends HTMLElement {
       } else {
         if (data.locked) {
           this._state = "locked";
+          this._stopPowWorker();
+          this.$btn.setAttribute("aria-busy", "false");
           this.$challengePrompt.textContent = "Session locked";
-          this.$challengeContent.innerHTML = "<p>Too many failed attempts. Please reload to try again.</p>";
+          this.$challengeContent.innerHTML = `
+            <p>Too many failed attempts. You can start over to try again.</p>
+            <button type="button" class="btn-primary" id="startOverBtn" style="margin-top: 8px;">Start over</button>
+          `;
           this.$submitBtn.style.display = "none";
           this.$switchBtn.style.display = "none";
+          const startOverBtn = this.$challengeContent.querySelector("#startOverBtn");
+          if (startOverBtn) {
+            startOverBtn.addEventListener("click", () => this._startOver());
+          }
         } else {
           this.$challengeError.textContent = `${data.error || "Incorrect solution"}. (${data.attempts_left} attempts left)`;
           this.$challengeError.style.display = "block";
@@ -1078,8 +1138,30 @@ export class AdaptiveCaptcha extends HTMLElement {
     }
   }
 
+  _startOver() {
+    this._state = "idle";
+    this._session = null;
+    this._activeChallenge = null;
+    this._token = null;
+    this._stopPowWorker();
+    this.$challengeBox.classList.remove("active");
+    this.$challengeBox.style.display = "none";
+    this.$btn.disabled = false;
+    this.$btn.setAttribute("aria-busy", "false");
+    this.$box.innerHTML = "";
+    this.$label.textContent = "Verify you are human";
+    this.$submitBtn.style.display = "";
+    this.$switchBtn.style.display = "";
+    this.$submitBtn.disabled = false;
+    this.$switchBtn.disabled = false;
+    this.$challengeError.style.display = "none";
+    this._announce("Verification reset. Press Verify to start again.");
+  }
+
   _onError(msg) {
     this._state = "error";
+    this._stopPowWorker();
+    this.$btn.setAttribute("aria-busy", "false");
     this.$box.innerHTML = `<span style="color:var(--cap-danger)">✕</span>`;
     this.$label.textContent = "Verification failed";
     this.$challengeError.textContent = msg;

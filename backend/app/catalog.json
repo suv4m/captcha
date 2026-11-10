@@ -20,7 +20,7 @@
       "type": "pow",
       "level": 1,
       "invisible": true,
-      "T": 0.2,
+      "T": 0.1,
       "Sh": 0.99,
       "Sb": 0.85,
       "incompatible_with": []
@@ -30,7 +30,7 @@
       "type": "pow",
       "level": 2,
       "invisible": true,
-      "T": 0.8,
+      "T": 0.4,
       "Sh": 0.98,
       "Sb": 0.65,
       "incompatible_with": []
@@ -39,7 +39,7 @@
       "id": "pow3",
       "type": "pow",
       "level": 3,
-      "T": 3.0,
+      "T": 5.8,
       "Sh": 0.96,
       "Sb": 0.50,
       "incompatible_with": []

@@ -570,3 +570,30 @@ tests/test_fix6_gate.py::test_session_yields_at_most_one_token PASSED    [100%]
 ============================== 3 passed in 5.63s ==============================
 Result: PASS
 ```
+
+## Fix 7: Widget accessibility and robustness
+
+### Gate: tests/test_fix7_gate.py
+```
+pytest -v tests/test_fix7_gate.py
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.2.0, pluggy-1.7.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\captcha
+plugins: anyio-4.12.1
+collecting ... collected 1 item
+
+tests/test_fix7_gate.py::test_fix7_playwright_keyboard_only_and_aria_attributes PASSED [100%]
+
+======================= 1 passed, 2 warnings in 26.69s ========================
+Result: PASS
+```
+
+### ARIA Attributes Added and Where:
+1. `#verifyBtn`: Replaced `role="checkbox"` with plain `<button>` having `aria-busy="false"` (toggled to `"true"` during checking).
+2. Visual Grid (`.grid-container`): Added `role="group"` and `aria-labelledby="challengePrompt"`.
+3. Visual Tiles (`.grid-tile`): Added `aria-pressed="false"` (toggles to `"true"` when selected).
+4. Audio Input (`#audioAnswerInput`): Added `aria-label="Enter the {N} numbers heard in audio"`, `inputmode="numeric"`, `autocomplete="off"`.
+5. Audio Play Button: Added text label and `aria-label="Play audio"`, with `audio.play().catch()` rejection handling.
+6. Proof-of-Work: Web Worker execution via Blob URL with `_stopPowWorker()` cleanup on disconnect/change/switch, and `crypto.subtle` availability check. Bits calibrated to 12 / 15 / 17 (T: 0.1s, 0.4s, 5.8s).
+7. Locked State: Added interactive "Start over" button (`#startOverBtn`) resetting widget back to idle without requiring page reload.

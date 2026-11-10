@@ -16,9 +16,9 @@ def count_leading_zero_bits(hash_bytes: bytes) -> int:
 
 
 def create(level: int = 1, rng: random.Random = None) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    # Difficulty bits scaled with level
-    bits_map = {1: 12, 2: 15, 3: 18}
-    bits = bits_map.get(level, 14)
+    # Difficulty bits scaled with level (calibrated: 12, 15, 17 bits)
+    bits_map = {1: 12, 2: 15, 3: 17}
+    bits = bits_map.get(level, 12)
 
     nonce = secrets.token_hex(16)
     public = {
