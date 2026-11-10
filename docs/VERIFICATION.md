@@ -597,3 +597,25 @@ Result: PASS
 5. Audio Play Button: Added text label and `aria-label="Play audio"`, with `audio.play().catch()` rejection handling.
 6. Proof-of-Work: Web Worker execution via Blob URL with `_stopPowWorker()` cleanup on disconnect/change/switch, and `crypto.subtle` availability check. Bits calibrated to 12 / 15 / 17 (T: 0.1s, 0.4s, 5.8s).
 7. Locked State: Added interactive "Start over" button (`#startOverBtn`) resetting widget back to idle without requiring page reload.
+
+## Fix 8: Demo, API and run script
+
+### Gate: tests/test_fix8_gate.py
+```
+pytest -v tests/test_fix8_gate.py
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.2.0, pluggy-1.7.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\captcha
+plugins: anyio-4.12.1
+collecting ... collected 5 items
+
+tests/test_fix8_gate.py::test_p0_live_behaviour PASSED                   [ 20%]
+tests/test_fix8_gate.py::test_simulate_timing_under_one_second PASSED    [ 40%]
+tests/test_fix8_gate.py::test_cors_no_allow_credentials_with_wildcard PASSED [ 60%]
+tests/test_fix8_gate.py::test_site_key_validation PASSED                 [ 80%]
+tests/test_fix8_gate.py::test_run_py_fails_loudly_on_training_error PASSED [100%]
+
+============================== 5 passed in 7.11s ==============================
+Result: PASS
+```

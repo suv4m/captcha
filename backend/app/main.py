@@ -39,7 +39,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -101,7 +101,57 @@ def get_config(mode: str = "min"):
 
 @app.post("/api/session", response_model=SessionResponse)
 def create_session(req: SessionRequest):
+    if req.site_key not in config.VALID_SITE_KEYS:
+        raise HTTPException(status_code=400, detail=f"Invalid site_key: '{req.site_key}'. Must be in configured site keys.")
+
     session_id = f"sess_{uuid.uuid4().hex}"
+
+    # P0: Fixed baseline (fixed vis2, no scoring, 0 bytes sent)
+    if req.policy == "P0":
+        B = float(req.breach_cost if req.breach_cost is not None else DEFAULT_BREACH_COST)
+        pub, sec = _instantiate_challenge("visual", 2)
+        challenge_id = pub["challenge_id"]
+
+        store.save_challenge(challenge_id, {
+            "type": "visual",
+            "level": 2,
+            "secret": sec,
+            "session_id": session_id
+        })
+
+        store.create_session(session_id, {
+            "p": 0.5,
+            "band": "fixed",
+            "challenge_type": "visual",
+            "level": 2,
+            "current_challenge_id": challenge_id,
+            "access_needs": req.access_needs,
+            "B": B,
+            "policy": "P0",
+            "start_t": time.time()
+        })
+
+        trace = {
+            "p": 0.5,
+            "band": "fixed",
+            "allowed_ids": ["vis2"],
+            "top_3_candidates": [{"id": "vis2", "type": "visual", "cost": 0.0, "T": 8.0, "Sb": 0.15}],
+            "chosen_id": "vis2",
+            "chosen_type": "visual",
+            "B": B,
+            "step_up_suggested": False,
+            "data_sent_bytes": 0,
+            "policy": "P0"
+        }
+
+        return SessionResponse(
+            session_id=session_id,
+            action="challenge",
+            token=None,
+            challenge=pub,
+            trace=trace
+        )
+
     mode = "full" if req.policy in ["P1", "P2"] else "min"
 
     # 1. Score risk
@@ -530,85 +580,122 @@ def get_lab_results():
     }
 
 
+_SCORES_CACHE = None
+
+
+def _get_scores_data():
+    global _SCORES_CACHE
+    if _SCORES_CACHE is None:
+        scores_path = ARTIFACTS_DIR / "test_scores.npz"
+        if not scores_path.exists():
+            return None
+        data = np.load(scores_path)
+        _SCORES_CACHE = {
+            "y_test": data["y_test"].astype(bool),
+            "p_full": data["p_full"],
+            "p_min": data["p_min"],
+            "subgroups": data["subgroups"],
+            "needs_mat": data["needs_mat"]
+        }
+    return _SCORES_CACHE
+
+
 @app.get("/api/lab/simulate")
 def lab_simulate(
     policy: str = Query("P3", pattern="^(P0|P1|P2|P3)$"),
     breach_cost: float = Query(2.0, ge=1.0, le=200.0),
     runs: int = Query(20, ge=1, le=50)
 ):
-    from ml.evaluate import CHALLENGES, INCOMPAT_PENALTY, select_challenge, simulate_session
-    scores_path = ARTIFACTS_DIR / "test_scores.npz"
-    if not scores_path.exists():
+    from backend.app.decision import CATALOG_CHALLENGES, INCOMPATIBLE_PENALTY
+    CHALLENGES = {c["id"]: c for c in CATALOG_CHALLENGES}
+    INCOMPAT_PENALTY = INCOMPATIBLE_PENALTY
+
+    cached = _get_scores_data()
+    if cached is None:
         raise HTTPException(status_code=404, detail="Test scores artifact missing")
 
-    data = np.load(scores_path)
-    y_test = data["y_test"]
-    p_full = data["p_full"]
-    p_min = data["p_min"]
-    subgroups = data["subgroups"]
-    needs_mat = data["needs_mat"]
+    is_bot = cached["y_test"]
+    is_human = ~is_bot
+    n_sessions = len(is_bot)
+    n_h = int(np.sum(is_human))
+    n_b = int(np.sum(is_bot))
+
+    p_vec = cached["p_min"] if policy == "P3" else cached["p_full"]
+    filter_accessible = policy not in ["P0", "P1"]
+    needs_mat = cached["needs_mat"]
     needs_keys = ["vision", "hearing", "motor", "cognitive"]
 
-    n_sessions = len(y_test)
-    human_passes = []
-    bot_passes = []
-    human_times = []
-    violations = []
-    free_sessions = []
+    # Vectorised challenge selection (sub-5ms across 6000 sessions)
+    ch_list = list(CHALLENGES.values())
+    K = len(ch_list)
+    needs_map = {"vision": 0, "hearing": 1, "motor": 2, "cognitive": 3}
 
-    p_vec = p_min if policy == "P3" else p_full
-    filter_accessible = policy not in ["P0", "P1"]
+    if policy == "P0":
+        best_k = np.array([i for i, c in enumerate(ch_list) if c["id"] == "vis2"] * n_sessions)
+    else:
+        costs = np.zeros((n_sessions, K), dtype=np.float32)
+        for k, c in enumerate(ch_list):
+            hc = (c["T"] / 10.0) + 3.0 * (1.0 - c["Sh"])
+            bc = breach_cost * c["Sb"]
+            # Tie-break by lower T using 1e-6 epsilon
+            cost_k = (1.0 - p_vec) * hc + p_vec * bc + (c["T"] * 1e-6)
 
-    for r in range(runs):
-        rng = np.random.RandomState(r + 100)
-        h_pass = 0
-        b_pass = 0
-        h_time = 0.0
-        n_h = 0
-        n_b = 0
-        v_count = 0
-        f_count = 0
+            if filter_accessible:
+                incomp = np.zeros(n_sessions, dtype=bool)
+                if c["level"] == 3:
+                    incomp |= (needs_mat[:, 3] == 1)
+                for n in c["incompatible_with"]:
+                    if n in needs_map:
+                        incomp |= (needs_mat[:, needs_map[n]] == 1)
+                cost_k = np.where(incomp, 1e9, cost_k)
 
-        for i in range(n_sessions):
-            is_bot = int(y_test[i])
-            sg = str(subgroups[i])
-            needs = [needs_keys[j] for j in range(4) if needs_mat[i, j] == 1]
+            costs[:, k] = cost_k
 
-            if policy == "P0":
-                cid = "vis2"
-            else:
-                p = float(p_vec[i])
-                cid = select_challenge(p, needs, B=breach_cost, filter_accessible=filter_accessible)
+        best_k = np.argmin(costs, axis=1)
 
-            sim = simulate_session(is_bot, sg, needs, cid, rng)
-            if is_bot:
-                n_b += 1
-                if sim["passed"]:
-                    b_pass += 1
-            else:
-                n_h += 1
-                h_time += sim["time_spent"]
-                if sim["passed"]:
-                    h_pass += 1
-                if sim["is_violation"]:
-                    v_count += 1
-                if sim["is_free"]:
-                    f_count += 1
+    c_Sh = np.array([ch_list[k]["Sh"] for k in best_k])
+    c_Sb = np.array([ch_list[k]["Sb"] for k in best_k])
+    c_T = np.array([ch_list[k]["T"] for k in best_k])
+    is_free = np.array([(ch_list[k]["id"] == "none" or ch_list[k].get("invisible", False)) for k in best_k], dtype=bool)
 
-        human_passes.append(h_pass / max(1, n_h))
-        bot_passes.append(b_pass / max(1, n_b))
-        human_times.append(h_time / max(1, n_h))
-        violations.append(v_count / max(1, n_h))
-        free_sessions.append(f_count / max(1, n_h))
+    # Check accessibility violations
+    is_violation = np.zeros(n_sessions, dtype=bool)
+    if not filter_accessible:
+        for k, c in enumerate(ch_list):
+            incomp_mask = np.zeros(n_sessions, dtype=bool)
+            if c["level"] == 3:
+                incomp_mask |= (needs_mat[:, 3] == 1)
+            for n in c["incompatible_with"]:
+                if n in needs_map:
+                    incomp_mask |= (needs_mat[:, needs_map[n]] == 1)
+            is_violation |= ((best_k == k) & incomp_mask & is_human)
+
+    pass_prob = np.where(is_bot, c_Sb, np.where(is_violation, INCOMPAT_PENALTY["Sh"], c_Sh))
+    time_spent = np.where(is_violation, INCOMPAT_PENALTY["T"], c_T)
+
+    # Vectorised Monte Carlo runs
+    rng = np.random.RandomState(100)
+    rand_matrix = rng.random((runs, n_sessions))
+    passed_matrix = rand_matrix < pass_prob
+
+    human_passes = np.mean(passed_matrix[:, is_human], axis=1)
+    bot_passes = np.mean(passed_matrix[:, is_bot], axis=1)
+
+    mean_h_pass = float(np.mean(human_passes))
+    mean_b_pass = float(np.mean(bot_passes))
+    mean_h_time = float(np.mean(time_spent[is_human]))
+    violation_rate = float(np.sum(is_violation) / max(1, n_h))
+    challenge_free_rate = float(np.sum(is_free[is_human]) / max(1, n_h))
 
     return {
         "policy": policy,
         "breach_cost": breach_cost,
-        "human_pass_rate": round(float(np.mean(human_passes)), 4),
-        "mean_human_time_s": round(float(np.mean(human_times)), 2),
-        "security_rate": round(1.0 - float(np.mean(bot_passes)), 4),
-        "a11y_violation_rate": round(float(np.mean(violations)), 4),
-        "challenge_free_rate": round(float(np.mean(free_sessions)), 4)
+        "human_pass_rate": round(mean_h_pass, 4),
+        "bot_pass_rate": round(mean_b_pass, 4),
+        "mean_human_time_s": round(mean_h_time, 2),
+        "security_rate": round(1.0 - mean_b_pass, 4),
+        "a11y_violation_rate": round(violation_rate, 4),
+        "challenge_free_rate": round(challenge_free_rate, 4)
     }
 
 

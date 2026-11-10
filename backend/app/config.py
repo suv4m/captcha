@@ -20,4 +20,5 @@ SESSION_TTL_SECONDS = 300
 MAX_ATTEMPTS = 3
 MIN_INTERACTION_MS = 400
 DEFAULT_BREACH_COST = 2.0
+VALID_SITE_KEYS = set(os.environ.get("CAPTCHA_SITE_KEYS", "demo-site-key,test_site,test_keyboard,demo-key").split(","))
 

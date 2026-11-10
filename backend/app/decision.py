@@ -7,6 +7,7 @@ with open(CATALOG_PATH, "r", encoding="utf-8") as f:
 
 CATALOG_CHALLENGES: List[Dict[str, Any]] = _CATALOG_DATA["challenges"]
 CHALLENGE_MAP: Dict[str, Dict[str, Any]] = {c["id"]: c for c in CATALOG_CHALLENGES}
+INCOMPATIBLE_PENALTY: Dict[str, Any] = _CATALOG_DATA.get("incompatible_penalty", {"Sh": 0.12, "T": 45.0})
 
 
 def get_compatible_challenges(access_needs: List[str], exclude_type: Optional[str] = None) -> List[Dict[str, Any]]:
