@@ -82,11 +82,13 @@ def test_keyboard_assistive_flow(client):
         answer = sec_res.json()["answer"]
 
         # Verify solve
+        import time
+        time.sleep(0.42)
         v_res = client.post("/api/challenge/verify", json={
             "session_id": sid,
             "challenge_id": cid,
             "answer": answer,
-            "interaction": {"duration_ms": 1500}
+            "interaction": {}
         })
         assert v_res.status_code == 200
         assert v_res.json()["ok"] is True

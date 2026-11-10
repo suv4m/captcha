@@ -532,3 +532,21 @@ tests/test_fix4_gate.py::test_keyboard_only_navigation_and_screen_reader_announc
 ======================= 2 passed, 2 warnings in 13.05s ========================
 Result: PASS
 ```
+
+## Fix 5: Server must measure solve time
+
+### Gate: tests/test_fix5_gate.py
+```
+pytest -v tests/test_fix5_gate.py
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.2.0, pluggy-1.7.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\captcha
+plugins: anyio-4.12.1
+collecting ... collected 1 item
+
+tests/test_fix5_gate.py::test_server_measured_solve_time_visual_fails_pow_passes PASSED [100%]
+
+============================== 1 passed in 4.53s ==============================
+Result: PASS
+```

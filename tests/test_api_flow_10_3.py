@@ -82,12 +82,15 @@ def test_full_flow_all_four_types(client):
                     break
                 counter += 1
 
+        if actual_type in ["visual", "audio", "drag"]:
+            time.sleep(0.42)
+
         # 3. Verify challenge (>400ms duration)
         v_res = client.post("/api/challenge/verify", json={
             "session_id": sid,
             "challenge_id": cid,
             "answer": answer,
-            "interaction": {"duration_ms": 1250}
+            "interaction": {}
         })
         assert v_res.status_code == 200
         v_data = v_res.json()
@@ -109,23 +112,23 @@ def test_full_flow_all_four_types(client):
 
 
 def test_400ms_anti_automation_rule(client):
-    """Solves faster than 400 ms fail as automation."""
+    """Solves faster than 400 ms fail as automation (visual, audio, drag)."""
     res = client.post("/api/session", json={
         "site_key": "test_site",
         "features": _get_dummy_features(),
-        "access_needs": ["vision", "hearing"],
+        "access_needs": [],
         "breach_cost": 100.0
     })
     sess_data = res.json()
     sid = sess_data["session_id"]
     cid = sess_data["challenge"]["challenge_id"]
 
-    # Solve with duration 200ms < 400ms
+    # Solve immediately without delay (< 400ms server elapsed)
     v_res = client.post("/api/challenge/verify", json={
         "session_id": sid,
         "challenge_id": cid,
         "answer": "any",
-        "interaction": {"duration_ms": 200}
+        "interaction": {}
     })
     assert v_res.status_code == 200
     v_data = v_res.json()
@@ -145,10 +148,11 @@ def test_attempts_and_lock_rule(client):
     sid = res.json()["session_id"]
     cid = res.json()["challenge"]["challenge_id"]
 
-    # 1st fail
+    # 1st fail (wait >400ms so failure reason is incorrect answer, not too fast)
+    time.sleep(0.42)
     v1 = client.post("/api/challenge/verify", json={
         "session_id": sid, "challenge_id": cid, "answer": "wrong",
-        "interaction": {"duration_ms": 600}
+        "interaction": {}
     }).json()
     assert v1["ok"] is False
     assert v1["attempts_left"] == 2
@@ -156,9 +160,10 @@ def test_attempts_and_lock_rule(client):
     new_cid = v1["new_challenge"]["challenge_id"]
 
     # 2nd fail
+    time.sleep(0.42)
     v2 = client.post("/api/challenge/verify", json={
         "session_id": sid, "challenge_id": new_cid, "answer": "wrong_again",
-        "interaction": {"duration_ms": 600}
+        "interaction": {}
     }).json()
     assert v2["ok"] is False
     assert v2["attempts_left"] == 1
@@ -166,9 +171,10 @@ def test_attempts_and_lock_rule(client):
     new_cid_2 = v2["new_challenge"]["challenge_id"]
 
     # 3rd fail -> Locked!
+    time.sleep(0.42)
     v3 = client.post("/api/challenge/verify", json={
         "session_id": sid, "challenge_id": new_cid_2, "answer": "wrong_3rd",
-        "interaction": {"duration_ms": 600}
+        "interaction": {}
     }).json()
     assert v3["ok"] is False
     assert v3["attempts_left"] == 0

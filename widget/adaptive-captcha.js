@@ -1014,7 +1014,7 @@ export class AdaptiveCaptcha extends HTMLElement {
           session_id: this._session.session_id,
           challenge_id: this._activeChallenge.challenge_id,
           answer: answer,
-          interaction: { duration_ms: Math.max(durationMs, 450) }
+          interaction: {}
         })
       });
 

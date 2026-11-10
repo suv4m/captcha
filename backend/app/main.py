@@ -204,25 +204,44 @@ def verify_challenge(req: VerifyRequest):
     if not ch_data or ch_data.get("session_id") != req.session_id:
         raise HTTPException(status_code=400, detail="Invalid challenge for session")
 
-    # Minimum interaction duration check (anti-instant-bot)
-    duration_ms = int(req.interaction.get("duration_ms", 0))
-    if duration_ms < MIN_INTERACTION_MS:
-        # Solve faster than 400 ms fails as automation per Section 5.2
+    # Server-measured solve time (anti-instant-bot)
+    now = time.time()
+    issued_at = ch_data.get("issued_at", ch_data.get("created_at", now))
+    duration_ms = max(0, int((now - issued_at) * 1000))
+    ctype = ch_data["type"]
+
+    # Apply 400ms minimum only to visual, audio, and drag (never PoW)
+    if ctype in ["visual", "audio", "drag"] and duration_ms < MIN_INTERACTION_MS:
         attempts_left = sess["attempts_left"] - 1
         locked = (attempts_left <= 0)
         store.update_session(req.session_id, {"attempts_left": attempts_left, "locked": locked})
         store.log_event(band=sess["band"], challenge_type=sess["challenge_type"],
                         level=sess["level"], outcome="fail_too_fast",
                         duration_ms=duration_ms, swap_count=sess.get("swap_count", 0))
+
+        new_challenge = None
+        if attempts_left > 0:
+            pub, sec = _instantiate_challenge(ctype, sess["level"])
+            new_cid = pub["challenge_id"]
+            store.save_challenge(new_cid, {
+                "type": ctype,
+                "level": sess["level"],
+                "secret": sec,
+                "session_id": req.session_id
+            })
+            store.update_session(req.session_id, {"current_challenge_id": new_cid})
+            new_challenge = pub
+
         return VerifyResponse(
             ok=False,
+            token=None,
             attempts_left=max(0, attempts_left),
             locked=locked,
-            error=f"Verification too fast ({duration_ms}ms < {MIN_INTERACTION_MS}ms threshold)"
+            error=f"Verification too fast ({duration_ms}ms < {MIN_INTERACTION_MS}ms threshold)",
+            new_challenge=new_challenge
         )
 
     # Verify answer against challenge secret
-    ctype = ch_data["type"]
     secret = ch_data["secret"]
     is_correct = False
 

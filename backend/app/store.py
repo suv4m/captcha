@@ -80,7 +80,9 @@ class Storage:
 
     def save_challenge(self, challenge_id: str, data: Dict[str, Any]):
         with self._lock:
-            data["created_at"] = time.time()
+            now = time.time()
+            data["created_at"] = now
+            data.setdefault("issued_at", now)
             self._challenges[challenge_id] = data
 
     def get_challenge(self, challenge_id: str) -> Optional[Dict[str, Any]]:
