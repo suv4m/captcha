@@ -526,6 +526,30 @@ export class AdaptiveCaptcha extends HTMLElement {
     this._startCollector();
   }
 
+  _buildSimulatedFeatures(requiredNames, riskMode) {
+    this._simSeq = (this._simSeq || 0) + 1;
+    const highPresets = [
+      { t_first_interaction: 12, t_events_total: 1, t_idle_ratio: 0.0, d_pointer_none: 1.0 },
+      { t_first_interaction: 65, t_events_total: 18, t_idle_ratio: 0.05, d_pointer_mouse: 1.0, p_n_moves: 15, p_straightness: 0.99, p_speed_mean: 2400, p_acc_std: 40, t_since_mount: 200 },
+      { t_first_interaction: 120, t_events_total: 30, t_idle_ratio: 0.12, d_pointer_mouse: 1.0, p_n_moves: 25, p_straightness: 0.97, p_speed_mean: 1900, p_acc_std: 120, t_since_mount: 350 },
+      { t_first_interaction: 140, t_events_total: 22, t_idle_ratio: 0.14, d_pointer_mouse: 1.0, p_n_moves: 20, p_straightness: 0.95, p_speed_mean: 1700, p_acc_std: 200, t_since_mount: 400 }
+    ];
+    const mediumPresets = [
+      { t_first_interaction: 150, t_events_total: 10, t_idle_ratio: 0.2, d_pointer_mouse: 1.0, p_n_moves: 10, p_path_len: 280, p_straightness: 0.96, p_speed_mean: 1800, p_speed_std: 25, p_speed_max: 2000, p_acc_std: 150, p_dir_changes_per_100px: 0.1, p_dt_std: 2, p_clicks: 1, t_since_mount: 450 },
+      { t_first_interaction: 100, t_events_total: 10, t_idle_ratio: 0.2, d_pointer_mouse: 1.0, p_n_moves: 10, p_path_len: 280, p_straightness: 0.96, p_speed_mean: 1800, p_speed_std: 25, p_speed_max: 2000, p_acc_std: 150, p_dir_changes_per_100px: 0.1, p_dt_std: 2, p_clicks: 1, t_since_mount: 450 },
+      { t_first_interaction: 150, t_events_total: 20, t_idle_ratio: 0.2, d_pointer_mouse: 1.0, p_n_moves: 10, p_path_len: 280, p_straightness: 0.96, p_speed_mean: 1800, p_speed_std: 25, p_speed_max: 2000, p_acc_std: 150, p_dir_changes_per_100px: 0.1, p_dt_std: 2, p_clicks: 1, t_since_mount: 450 }
+    ];
+    const pool = riskMode === "medium" ? mediumPresets : highPresets;
+    const preset = pool[(this._simSeq - 1) % pool.length];
+    const uniqueJitter = ((this._simSeq * 13 + (Date.now() % 97)) % 997) * 0.0001;
+    const feats = {};
+    requiredNames.forEach((k, idx) => {
+      const base = preset[k] !== undefined ? preset[k] : 0.0;
+      feats[k] = idx === 0 ? Number((base + uniqueJitter).toFixed(4)) : base;
+    });
+    return feats;
+  }
+
   connectedCallback() {
     this._bindEvents();
     this._startCollector();
@@ -582,6 +606,7 @@ export class AdaptiveCaptcha extends HTMLElement {
       if (res.ok) {
         const data = await res.json();
         this._requiredFeatures = data.required_features;
+        this._requiredFeaturesMode = mode;
       }
     } catch (e) {
 
@@ -730,8 +755,9 @@ export class AdaptiveCaptcha extends HTMLElement {
     };
 
     const mode = (this.policy === "P1" || this.policy === "P2") ? "full" : "min";
-    if (!this._requiredFeatures) {
+    if (!this._requiredFeatures || this._requiredFeaturesMode !== mode) {
       await this._loadConfig();
+      this._requiredFeaturesMode = mode;
     }
     const requiredNames = this._requiredFeatures || (mode === "full" ? FEATURE_NAMES : [
       "p_dir_changes_per_100px", "t_first_interaction", "p_speed_std", "p_speed_mean",
@@ -739,12 +765,9 @@ export class AdaptiveCaptcha extends HTMLElement {
     ]);
 
     let payloadFeatures = buildFeaturePayload(trace, requiredNames);
-    if (this.getAttribute("simulate-risk") === "high") {
-
-      payloadFeatures = {};
-      requiredNames.forEach((k, idx) => {
-        payloadFeatures[k] = idx === 0 ? (Date.now() % 1000) * 0.001 : 0.0;
-      });
+    const simRisk = this.getAttribute("simulate-risk");
+    if (simRisk === "high" || simRisk === "medium") {
+      payloadFeatures = this._buildSimulatedFeatures(requiredNames, simRisk);
     }
 
     const featureCount = Object.keys(payloadFeatures).length;

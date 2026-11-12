@@ -70,7 +70,8 @@
           <div class="control-row">
             <label for="riskSelect">Interaction Profile</label>
             <select id="riskSelect" class="select-control">
-              <option value="high" selected>Simulate Suspicious / Bot (p &gt; 0.99 → Triggers Challenge)</option>
+              <option value="high" selected>Simulate High Risk / Bot (p ~ 0.85–0.999 → Triggers Challenge)</option>
+              <option value="medium">Simulate Medium Risk / Uncertain (p ~ 0.27–0.53)</option>
               <option value="auto">Natural Human (Live Risk p &lt; 0.15 → Silent Pass)</option>
             </select>
           </div>
@@ -159,10 +160,9 @@
       widget.setAttribute("breach-cost", e.target.value);
     });
 
-    // Risk profile change
     riskSelect.addEventListener("change", (e) => {
-      if (e.target.value === "high") {
-        widget.setAttribute("simulate-risk", "high");
+      if (e.target.value === "high" || e.target.value === "medium") {
+        widget.setAttribute("simulate-risk", e.target.value);
       } else {
         widget.removeAttribute("simulate-risk");
       }
